@@ -1,0 +1,40 @@
+name: Daily Article Scraper
+
+on:
+  schedule:
+    # Run daily at 7:00 AM UTC
+    - cron: '0 7 * * *'
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  scrape-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run article scraper and publisher
+        run: node scripts/test-full-process.js
+        env:
+          # WordPress.com API Configuration
+          WORDPRESS_API_URL: ${{ secrets.WORDPRESS_API_URL }}
+          WORDPRESS_CLIENT_ID: ${{ secrets.WORDPRESS_CLIENT_ID }}
+          WORDPRESS_CLIENT_SECRET: ${{ secrets.WORDPRESS_CLIENT_SECRET }}
+          WORDPRESS_USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
+          WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
+          
+          # OpenRouter API Configuration
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          
+          # Site URL
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}

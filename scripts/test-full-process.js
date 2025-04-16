@@ -9,13 +9,14 @@ const fs = require('fs');
 
 // WordPress credentials from environment variables
 const WP_API_URL = process.env.WORDPRESS_API_URL;
+const WP_CLIENT_ID = process.env.WORDPRESS_CLIENT_ID;
+const WP_CLIENT_SECRET = process.env.WORDPRESS_CLIENT_SECRET;
 const WP_USERNAME = process.env.WORDPRESS_USERNAME;
 const WP_PASSWORD = process.env.WORDPRESS_PASSWORD;
 const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://techcrunch.com/category/artificial-intelligence/';
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-// Function to check if an article was published today
-function isPublishedToday(dateString) {
+// Function to check if an article was published within the last 24 hours
+function isPublishedWithin24Hours(dateString) {
   if (!dateString) return false;
 
   // Try to parse the date string
@@ -45,11 +46,10 @@ function isPublishedToday(dateString) {
     return false;
   }
 
-  // Check if the date is today
-  const today = new Date();
-  return publishDate.getDate() === today.getDate() &&
-         publishDate.getMonth() === today.getMonth() &&
-         publishDate.getFullYear() === today.getFullYear();
+  // Check if the date is within the last 24 hours
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+  return publishDate >= twentyFourHoursAgo;
 }
 
 // Add this diagnostic function
@@ -457,9 +457,12 @@ async function crawlArticleContent(url) {
 
 // 3. Rewrite article using OpenRouter API
 async function rewriteArticle(article) {
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
     console.error('OpenRouter API key not configured');
-    return { title: article.title, content: article.content };
+    console.error('Please set OPENROUTER_API_KEY in your .env file');
+    console.error('You can get an API key from https://openrouter.ai/keys');
+    return null; // Return null to indicate failure
   }
 
   console.log(`Rewriting article: ${article.title}`);
@@ -469,15 +472,15 @@ async function rewriteArticle(article) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://your-site.com',
+        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://lead-media.vercel.app/',
         'X-Title': 'Unmanned Newsroom'
       },
       body: JSON.stringify({
-        model: 'openrouter/optimus-alpha',
+        model: 'google/gemini-2.5-pro-exp-03-25:free',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert tech and AI content rewriter for "Unmanned Newsroom". Rewrite the article to make it unique while preserving all factual information. Maintain the same structure but use different wording and phrasing. YOU MUST REWRITE THE TITLE AS WELL AS THE CONTENT.\n\nIMPORTANT FORMATTING RULES:\n\n1. Your response MUST start with the rewritten title on the first line, followed by a blank line, then the content\n2. Use HTML tags like <strong> and <em> for emphasis instead of asterisks (*)\n3. DO NOT include any of these sections in your output:\n   - "Topics" or "Popular Stories" sections\n   - "Related Articles" or "Read More" sections\n   - "About the Author" sections\n   - Author bios or signatures\n   - "AI Editor" signatures\n   - "Posted:" markers at the beginning of content\n4. DO NOT repeat the title at the beginning of the article content\n5. DO NOT include any links to other articles at the end\n6. Focus ONLY on the main article content\n7. NEVER include the word "Posted:" in your output\n8. Emphasize tech and AI aspects of the story when relevant'
+            content: 'You are an expert tech and AI content rewriter for "Unmanned Newsroom". Rewrite the article to make it unique while preserving all factual information. Maintain the same structure but use different wording and phrasing. YOU MUST REWRITE THE TITLE AS WELL AS THE CONTENT.\n\nIMPORTANT FORMATTING RULES:\n\n1. Your response MUST start with the rewritten title on the first line, followed by a blank line, then the content\n2. Use HTML tags like <strong> and <em> for emphasis instead of asterisks (*)\n3. DO NOT include any of these sections in your output:\n   - "Topics" or "Popular Stories" sections\n   - "Related Articles" or "Read More" sections\n   - "About the Author" sections\n   - Author bios or signatures\n   - "AI Editor" signatures\n   - "Posted:" markers at the beginning of content\n   - Subscription information sections\n   - "By submitting your email" disclaimers\n   - Newsletter signup forms\n   - "Every weekday and Sunday" promotional text\n   - Privacy Notice mentions\n4. DO NOT repeat the title at the beginning of the article content\n5. DO NOT include any links to other articles at the end\n6. Focus ONLY on the main article content\n7. NEVER include the word "Posted:" in your output\n8. NEVER include any text about subscribing to newsletters\n9. Emphasize tech and AI aspects of the story when relevant'
           },
           {
             role: 'user',
@@ -488,6 +491,9 @@ async function rewriteArticle(article) {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenRouter API error status: ${response.status} ${response.statusText}`);
+      console.error(`OpenRouter API error details: ${errorText}`);
       throw new Error(`OpenRouter API error: ${response.statusText}`);
     }
 
@@ -500,13 +506,24 @@ async function rewriteArticle(article) {
     const title = lines[0];
     const content = lines.slice(2).join('\n'); // Skip the title and the blank line
 
-    console.log(`Rewritten title: ${title}`);
-    console.log(`Rewritten content (first 100 chars): ${content.substring(0, 100)}...`);
+    // Clean up the content
+    const cleanedContent = content
+      .replace(/Posted:/g, '')
+      .replace(/Topics[\s\S]*$/g, '')
+      .replace(/Subscribe for the industry[\s\S]*?Privacy Notice\./g, '')
+      .replace(/Every weekday and Sunday[\s\S]*?Privacy Notice\./g, '')
+      .replace(/By submitting your email[\s\S]*?Privacy Notice\./g, '')
+      .replace(/TechCrunch's AI experts[\s\S]*?Privacy Notice\./g, '')
+      .replace(/Startups are the core[\s\S]*?Privacy Notice\./g, '');
 
-    return { title, content };
+    console.log(`Rewritten title: ${title}`);
+    console.log(`Rewritten content (first 100 chars): ${cleanedContent.substring(0, 100)}...`);
+
+    return { title, content: cleanedContent };
   } catch (error) {
     console.error('Error rewriting article:', error);
-    return { title: article.title, content: article.content };
+    // Return null to indicate failure instead of falling back to original content
+    return null;
   }
 }
 
@@ -547,12 +564,26 @@ async function postToWordPress(article, rewrittenArticle) {
     cleanedContent = cleanedContent.replace(new RegExp(`^\\*\\*${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\*\\*\\n\\n`), '');
   }
 
-  // Remove "Posted:" at the beginning of the content
+  // Remove "Posted:" at the beginning of the content or anywhere in the content
   cleanedContent = cleanedContent.replace(/^Posted:\s*\n\n/g, '');
   cleanedContent = cleanedContent.replace(/^Posted:/g, '');
+  cleanedContent = cleanedContent.replace(/Posted:\s*\n\n/g, '');
+  cleanedContent = cleanedContent.replace(/Posted:/g, '');
+  cleanedContent = cleanedContent.replace(/Posted\s+in[^\n]+\n/g, '');
+  cleanedContent = cleanedContent.replace(/Posted\s+by[^\n]+\n/g, '');
 
-  // Remove Topics section
-  cleanedContent = cleanedContent.replace(/\*\*Topics:\*\*[\s\S]*?(?=\n\n|\*\*|$)/g, '');
+  // Remove Topics section and everything after it (including subscription info)
+  cleanedContent = cleanedContent.replace(/Topics[\s\S]*$/g, '');
+  cleanedContent = cleanedContent.replace(/\*\*Topics\*\*[\s\S]*$/g, '');
+  cleanedContent = cleanedContent.replace(/\*\*Topics:[\s\S]*$/g, '');
+  cleanedContent = cleanedContent.replace(/Topics:[\s\S]*$/g, '');
+
+  // Remove subscription information sections
+  cleanedContent = cleanedContent.replace(/Subscribe for the industry[\s\S]*?Privacy Notice\./g, '');
+  cleanedContent = cleanedContent.replace(/Every weekday and Sunday[\s\S]*?Privacy Notice\./g, '');
+  cleanedContent = cleanedContent.replace(/By submitting your email[\s\S]*?Privacy Notice\./g, '');
+  cleanedContent = cleanedContent.replace(/TechCrunch's AI experts[\s\S]*?Privacy Notice\./g, '');
+  cleanedContent = cleanedContent.replace(/Startups are the core[\s\S]*?Privacy Notice\./g, '');
 
   // Remove Popular Stories section
   cleanedContent = cleanedContent.replace(/\*\*Popular Stories:\*\*[\s\S]*?(?=\n\n|\*\*|$)/g, '');
@@ -588,23 +619,42 @@ async function postToWordPress(article, rewrittenArticle) {
   // Remove any trailing whitespace
   cleanedContent = cleanedContent.trim();
 
-  // Use Application Password authentication (now built into WordPress Core)
+  // For WordPress.com, we need to use OAuth2 authentication
   try {
-    console.log('Using Application Password authentication...');
+    console.log('Using WordPress.com authentication...');
 
-    // Format the API key correctly - Application Passwords have spaces in them
-    // Your .env file has: WORDPRESS_API_KEY=GK5eKzVeJdGwswx9CFuJavnl
-    // But it might need spaces like: GK5e KzVe JdGw swx9 CFuJ avnl
-    const apiKey = process.env.WORDPRESS_API_KEY;
+    // First, get an access token using client credentials
+    console.log('Getting access token...');
+    const tokenResponse = await fetch('https://public-api.wordpress.com/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        'client_id': WP_CLIENT_ID,
+        'client_secret': WP_CLIENT_SECRET,
+        'grant_type': 'password',
+        'username': WP_USERNAME,
+        'password': WP_PASSWORD
+      }).toString()
+    });
 
-    // Create Basic Auth header with username and application password
-    const basicAuth = Buffer.from(`${WP_USERNAME}:${apiKey}`).toString('base64');
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error(`WordPress token error status: ${tokenResponse.status} ${tokenResponse.statusText}`);
+      console.error(`WordPress token error details: ${errorText}`);
+      throw new Error(`WordPress token error: ${tokenResponse.statusText}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    console.log('Access token obtained successfully!');
+    const accessToken = tokenData.access_token;
 
     const response = await fetch(`${WP_API_URL}/posts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${basicAuth}`
+        'Authorization': `Bearer ${accessToken}`
       },
       body: JSON.stringify({
         title: title,
@@ -672,7 +722,7 @@ async function main() {
     processed: 0,
     successful: 0,
     failed: 0,
-    todayArticles: 0
+    recentArticles: 0
   };
 
   // Process all articles
@@ -693,18 +743,18 @@ async function main() {
         continue;
       }
 
-      // Check if the article was published today
+      // Check if the article was published within the last 24 hours
       if (result.publishDate) {
         console.log(`Publication date: ${result.publishDate}`);
-        const isToday = isPublishedToday(result.publishDate);
-        console.log(`Published today: ${isToday ? 'Yes' : 'No'}`);
+        const isRecent = isPublishedWithin24Hours(result.publishDate);
+        console.log(`Published within last 24 hours: ${isRecent ? 'Yes' : 'No'}`);
 
-        if (!isToday) {
-          console.log('Article not published today. Skipping.');
+        if (!isRecent) {
+          console.log('Article not published within last 24 hours. Skipping.');
           continue;
         }
 
-        results.todayArticles++;
+        results.recentArticles++;
       } else {
         console.log('Could not determine publication date. Processing anyway.');
       }
@@ -754,7 +804,7 @@ async function main() {
   // Print summary
   console.log('\n=== PROCESSING SUMMARY ===');
   console.log(`Total articles found: ${articles.length}`);
-  console.log(`Articles published today: ${results.todayArticles}`);
+  console.log(`Articles published in last 24 hours: ${results.recentArticles}`);
   console.log(`Articles processed: ${results.processed}`);
   console.log(`Articles successfully posted: ${results.successful}`);
   console.log(`Articles failed: ${results.failed}`);
