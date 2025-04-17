@@ -47,7 +47,7 @@ async function testOpenRouter() {
         'X-Title': 'Unmanned Newsroom'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro-exp-03-25:free',
+        model: 'arliai/qwq-32b-arliai-rpr-v1:free',
         messages: [
           {
             role: 'user',

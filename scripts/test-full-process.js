@@ -476,7 +476,7 @@ async function rewriteArticle(article) {
         'X-Title': 'Unmanned Newsroom'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro-exp-03-25:free',
+        model: 'deepseek/deepseek-chat-v3-0324:free',
         messages: [
           {
             role: 'system',
@@ -619,6 +619,11 @@ async function postToWordPress(article, rewrittenArticle) {
   // Remove any trailing whitespace
   cleanedContent = cleanedContent.trim();
 
+  // Add byline to the beginning of the article
+  const authorName = 'Fumi Nozawa'; // Use a more readable author name
+  const byline = `<p><em>By ${authorName}</em></p>`;
+  cleanedContent = byline + '\n\n' + cleanedContent;
+
   // For WordPress.com, we need to use OAuth2 authentication
   try {
     console.log('Using WordPress.com authentication...');
@@ -660,6 +665,8 @@ async function postToWordPress(article, rewrittenArticle) {
         title: title,
         content: cleanedContent,
         status: 'publish',
+        author: 1, // Use the user ID of the WordPress account (usually 1 for the primary admin)
+        author_name: authorName, // Use the same readable author name
         meta: {
           _yoast_wpseo_title: metaTitle || title,
           _yoast_wpseo_metadesc: metaDescription || cleanedContent.substring(0, 155) + '...'

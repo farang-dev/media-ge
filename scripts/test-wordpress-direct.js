@@ -1,5 +1,5 @@
 // Simple WordPress posting test script
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' }); // Try loading from .env.local instead
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 // WordPress credentials
@@ -8,7 +8,26 @@ const WP_USERNAME = process.env.WORDPRESS_USERNAME;
 const WP_API_KEY = process.env.WORDPRESS_API_KEY;
 
 async function testWordPressPost() {
-  console.log('Testing WordPress posting with different methods...');
+  // Debug environment variables
+  console.log('Environment variables:');
+  console.log('WORDPRESS_API_URL:', process.env.WORDPRESS_API_URL);
+  console.log('WORDPRESS_USERNAME:', process.env.WORDPRESS_USERNAME);
+  console.log('WORDPRESS_PASSWORD:', process.env.WORDPRESS_PASSWORD ? '[REDACTED]' : 'undefined');
+  console.log('WORDPRESS_API_KEY:', process.env.WORDPRESS_API_KEY ? '[REDACTED]' : 'undefined');
+  
+  if (!WP_API_URL) {
+    console.error('ERROR: WORDPRESS_API_URL is not defined in your environment variables');
+    console.log('Please check your .env or .env.local file');
+    return;
+  }
+  
+  if (!WP_USERNAME) {
+    console.error('ERROR: WORDPRESS_USERNAME is not defined in your environment variables');
+    console.log('Please check your .env or .env.local file');
+    return;
+  }
+  
+  console.log('\nTesting WordPress posting with different methods...');
   console.log(`API URL: ${WP_API_URL}`);
   console.log(`Username: ${WP_USERNAME}`);
   
@@ -75,49 +94,51 @@ async function testWordPressPost() {
   }
   
   // Method 3: Try with JWT authentication if available
-  const JWT_AUTH_URL = `${WP_API_URL.replace('/wp/v2', '')}/jwt-auth/v1/token`;
-  try {
-    console.log('\nMethod 3: JWT Authentication (if plugin installed)');
-    // First get a token
-    const tokenResponse = await fetch(JWT_AUTH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username: WP_USERNAME,
-        password: process.env.WORDPRESS_PASSWORD
-      })
-    });
-    
-    if (tokenResponse.ok) {
-      const tokenData = await tokenResponse.json();
-      console.log('JWT token obtained');
-      
-      // Use token to create post
-      const response = await fetch(`${WP_API_URL}/posts`, {
+  if (WP_API_URL) {
+    const JWT_AUTH_URL = `${WP_API_URL.replace('/wp/v2', '')}/jwt-auth/v1/token`;
+    try {
+      console.log('\nMethod 3: JWT Authentication (if plugin installed)');
+      // First get a token
+      const tokenResponse = await fetch(JWT_AUTH_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenData.token}`
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(testPost)
+        body: JSON.stringify({
+          username: WP_USERNAME,
+          password: process.env.WORDPRESS_PASSWORD
+        })
       });
       
-      console.log(`Response status: ${response.status} ${response.statusText}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Success! Post created with ID: ${data.id}`);
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        console.log('JWT token obtained');
+        
+        // Use token to create post
+        const response = await fetch(`${WP_API_URL}/posts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenData.token}`
+          },
+          body: JSON.stringify(testPost)
+        });
+        
+        console.log(`Response status: ${response.status} ${response.statusText}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`Success! Post created with ID: ${data.id}`);
+        } else {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+        }
       } else {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
+        console.log('JWT authentication not available or failed');
       }
-    } else {
-      console.log('JWT authentication not available or failed');
+    } catch (error) {
+      console.log('JWT authentication not available or failed:', error.message);
     }
-  } catch (error) {
-    console.log('JWT authentication not available or failed:', error.message);
   }
   
   console.log('\nTest completed.');
