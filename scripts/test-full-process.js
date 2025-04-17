@@ -455,7 +455,7 @@ async function crawlArticleContent(url) {
   }
 }
 
-// 3. Rewrite article using OpenRouter API
+// 3. Rewrite article using OpenRouter API with SEO optimization
 async function rewriteArticle(article) {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
@@ -467,6 +467,59 @@ async function rewriteArticle(article) {
 
   console.log(`Rewriting article: ${article.title}`);
   try {
+    // First, generate SEO-optimized title and meta description
+    console.log('Generating SEO metadata...');
+    const seoResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://lead-media.vercel.app/',
+        'X-Title': 'Unmanned Newsroom'
+      },
+      body: JSON.stringify({
+        model: 'deepseek/deepseek-chat-v3-0324:free',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an SEO expert specializing in tech and AI content. Create an SEO-optimized title and meta description for the article. The title should be attention-grabbing, include relevant keywords, and be under 60 characters. The meta description should summarize the article, include keywords, and be under 155 characters.\n\nYour response format MUST be:\nTITLE: [Your SEO title]\nMETA: [Your meta description]'
+          },
+          {
+            role: 'user',
+            content: `Create SEO-optimized title and meta description for this article:\n\nOriginal Title: ${article.title}\n\nContent: ${article.content.substring(0, 1500)}...`
+          }
+        ]
+      })
+    });
+
+    if (!seoResponse.ok) {
+      const errorText = await seoResponse.text();
+      console.error(`OpenRouter API error status: ${seoResponse.status} ${seoResponse.statusText}`);
+      console.error(`OpenRouter API error details: ${errorText}`);
+      throw new Error(`OpenRouter API error: ${seoResponse.statusText}`);
+    }
+
+    const seoData = await seoResponse.json();
+    const seoText = seoData.choices[0].message.content;
+
+    // Extract SEO title and meta description
+    let seoTitle = article.title;
+    let seoMetaDescription = '';
+
+    const titleMatch = seoText.match(/TITLE:\s*(.+)/);
+    if (titleMatch && titleMatch[1]) {
+      seoTitle = titleMatch[1].trim();
+    }
+
+    const metaMatch = seoText.match(/META:\s*(.+)/);
+    if (metaMatch && metaMatch[1]) {
+      seoMetaDescription = metaMatch[1].trim();
+    }
+
+    console.log(`SEO Title: ${seoTitle}`);
+    console.log(`SEO Meta Description: ${seoMetaDescription}`);
+
+    // Now rewrite the article with SEO optimization
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -480,11 +533,11 @@ async function rewriteArticle(article) {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert tech and AI content rewriter for "Unmanned Newsroom". Rewrite the article to make it unique while preserving all factual information. Maintain the same structure but use different wording and phrasing. YOU MUST REWRITE THE TITLE AS WELL AS THE CONTENT.\n\nIMPORTANT FORMATTING RULES:\n\n1. Your response MUST start with the rewritten title on the first line, followed by a blank line, then the content\n2. Use HTML tags like <strong> and <em> for emphasis instead of asterisks (*)\n3. DO NOT include any of these sections in your output:\n   - "Topics" or "Popular Stories" sections\n   - "Related Articles" or "Read More" sections\n   - "About the Author" sections\n   - Author bios or signatures\n   - "AI Editor" signatures\n   - "Posted:" markers at the beginning of content\n   - Subscription information sections\n   - "By submitting your email" disclaimers\n   - Newsletter signup forms\n   - "Every weekday and Sunday" promotional text\n   - Privacy Notice mentions\n4. DO NOT repeat the title at the beginning of the article content\n5. DO NOT include any links to other articles at the end\n6. Focus ONLY on the main article content\n7. NEVER include the word "Posted:" in your output\n8. NEVER include any text about subscribing to newsletters\n9. Emphasize tech and AI aspects of the story when relevant'
+            content: 'You are an expert tech and AI content rewriter for "Unmanned Newsroom" with strong SEO skills. Rewrite the article to make it unique while preserving all factual information. Optimize the content for search engines by:\n\n1. Using the provided SEO title\n2. Including relevant keywords naturally throughout the text\n3. Using proper heading structure with H2 and H3 tags for subtopics\n4. Adding semantic HTML like <strong> for important terms\n5. Writing engaging, scannable content with short paragraphs\n6. Including a strong introduction and conclusion\n\nIMPORTANT FORMATTING RULES:\n\n1. Your response MUST start with the SEO title on the first line, followed by a blank line, then the content\n2. Use HTML tags like <h2>, <h3>, <strong> and <em> for proper structure and emphasis\n3. DO NOT include any of these sections in your output:\n   - "Topics" or "Popular Stories" sections\n   - "Related Articles" or "Read More" sections\n   - "About the Author" sections\n   - Author bios or signatures\n   - "AI Editor" signatures\n   - "Posted:" markers at the beginning of content\n   - Subscription information sections\n   - "By submitting your email" disclaimers\n   - Newsletter signup forms\n   - "Every weekday and Sunday" promotional text\n   - Privacy Notice mentions\n4. DO NOT repeat the title at the beginning of the article content\n5. DO NOT include any links to other articles at the end\n6. Focus ONLY on the main article content\n7. NEVER include the word "Posted:" in your output\n8. NEVER include any text about subscribing to newsletters\n9. Emphasize tech and AI aspects of the story when relevant'
           },
           {
             role: 'user',
-            content: `Please rewrite this article with the title "${article.title}":\n\n${article.content}`
+            content: `Please rewrite this article with the SEO title "${seoTitle}":\n\n${article.content}`
           }
         ]
       })
@@ -519,7 +572,12 @@ async function rewriteArticle(article) {
     console.log(`Rewritten title: ${title}`);
     console.log(`Rewritten content (first 100 chars): ${cleanedContent.substring(0, 100)}...`);
 
-    return { title, content: cleanedContent };
+    return {
+      title,
+      content: cleanedContent,
+      metaTitle: seoTitle,
+      metaDescription: seoMetaDescription
+    };
   } catch (error) {
     console.error('Error rewriting article:', error);
     // Return null to indicate failure instead of falling back to original content

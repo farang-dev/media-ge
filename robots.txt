@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Allow all bots to access all content
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-content/plugins/
+Disallow: /wp-json/
+
+# Sitemap location
+Sitemap: https://fumixo5.wordpress.com/sitemap.xml
