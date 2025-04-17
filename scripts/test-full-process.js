@@ -619,10 +619,8 @@ async function postToWordPress(article, rewrittenArticle) {
   // Remove any trailing whitespace
   cleanedContent = cleanedContent.trim();
 
-  // Add byline to the beginning of the article
-  const authorName = 'Fumi Nozawa'; // Use a more readable author name
-  const byline = `<p><em>By ${authorName}</em></p>`;
-  cleanedContent = byline + '\n\n' + cleanedContent;
+  // Define author name for WordPress metadata
+  const authorName = 'Fumi Nozawa';
 
   // For WordPress.com, we need to use OAuth2 authentication
   try {
