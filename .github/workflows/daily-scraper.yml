@@ -7,9 +7,9 @@ on:
     - cron: '0 7 * * *'
   workflow_dispatch:  # This allows manual triggering from the GitHub UI
 
-  # Run this workflow when changes are pushed to the main branch
+  # Run this workflow when changes are pushed to the master branch
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'scripts/**'
       - 'lib/**'
