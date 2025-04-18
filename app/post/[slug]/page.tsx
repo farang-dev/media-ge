@@ -68,7 +68,7 @@ export default async function PostPage({ params }: PostPageProps) {
       <div className="max-w-3xl mx-auto px-4">
         <RelatedArticles posts={relatedPosts} />
         <div className="mt-8 pb-8">
-          <Link href="/" className="text-orange-500 hover:underline inline-block">
+          <Link href="/" className="text-red-600 hover:underline inline-block">
             ← Back to all articles
           </Link>
         </div>

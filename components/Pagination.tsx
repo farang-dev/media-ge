@@ -14,15 +14,15 @@ export default function Pagination({ currentPage, totalPages }: PaginationProps)
   // Calculate the range of page numbers to show
   const pageNumbers = [];
   const maxPagesToShow = 5;
-  
+
   let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
   let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-  
+
   // Adjust if we're near the end
   if (endPage - startPage + 1 < maxPagesToShow) {
     startPage = Math.max(1, endPage - maxPagesToShow + 1);
   }
-  
+
   for (let i = startPage; i <= endPage; i++) {
     pageNumbers.push(i);
   }
@@ -31,18 +31,18 @@ export default function Pagination({ currentPage, totalPages }: PaginationProps)
     <div className="flex justify-center items-center space-x-2 my-8">
       {/* Previous page button */}
       {currentPage > 1 && (
-        <Link 
+        <Link
           href={`/?page=${currentPage - 1}`}
           className="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100"
         >
           &laquo; Prev
         </Link>
       )}
-      
+
       {/* First page and ellipsis if needed */}
       {startPage > 1 && (
         <>
-          <Link 
+          <Link
             href="/?page=1"
             className="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100"
           >
@@ -53,29 +53,29 @@ export default function Pagination({ currentPage, totalPages }: PaginationProps)
           )}
         </>
       )}
-      
+
       {/* Page numbers */}
       {pageNumbers.map(number => (
-        <Link 
+        <Link
           key={number}
           href={`/?page=${number}`}
           className={`px-3 py-1 border rounded ${
-            number === currentPage 
-              ? 'bg-orange-500 text-white' 
+            number === currentPage
+              ? 'bg-red-600 text-white'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           {number}
         </Link>
       ))}
-      
+
       {/* Last page and ellipsis if needed */}
       {endPage < totalPages && (
         <>
           {endPage < totalPages - 1 && (
             <span className="px-3 py-1 text-gray-500">...</span>
           )}
-          <Link 
+          <Link
             href={`/?page=${totalPages}`}
             className="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100"
           >
@@ -83,10 +83,10 @@ export default function Pagination({ currentPage, totalPages }: PaginationProps)
           </Link>
         </>
       )}
-      
+
       {/* Next page button */}
       {currentPage < totalPages && (
-        <Link 
+        <Link
           href={`/?page=${currentPage + 1}`}
           className="px-3 py-1 border rounded text-gray-600 hover:bg-gray-100"
         >

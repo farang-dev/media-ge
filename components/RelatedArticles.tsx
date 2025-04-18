@@ -16,18 +16,18 @@ export default function RelatedArticles({ posts }: RelatedArticlesProps) {
       <div className="grid gap-4 md:grid-cols-3 sm:grid-cols-2 grid-cols-1">
         {posts.map((post) => (
           <div key={post.id} className="bg-white p-4 rounded shadow-sm hover:shadow-md transition-shadow">
-            <Link 
+            <Link
               href={`/post/${post.slug}`}
               className="block"
             >
-              <h3 
-                className="font-medium text-gray-900 mb-2 hover:text-orange-500 transition-colors"
+              <h3
+                className="font-medium text-gray-900 mb-2 hover:text-red-600 transition-colors"
                 dangerouslySetInnerHTML={{ __html: post.title.rendered }}
               />
-              <div 
+              <div
                 className="text-sm text-gray-600 line-clamp-2"
-                dangerouslySetInnerHTML={{ 
-                  __html: post.excerpt.rendered.replace(/<[^>]*>/g, '').substring(0, 120) + '...' 
+                dangerouslySetInnerHTML={{
+                  __html: post.excerpt.rendered.replace(/<[^>]*>/g, '').substring(0, 120) + '...'
                 }}
               />
             </Link>

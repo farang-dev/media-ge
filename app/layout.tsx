@@ -5,17 +5,17 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Unmanned Newsroom',
-  description: 'Latest tech and AI news, automatically curated',
+  title: 'ジョージア🇬🇪ニュース',
+  description: 'ジョージアの最近のニュースを日本人の方向けて日本語でお届け',
   openGraph: {
-    title: 'Unmanned Newsroom',
-    description: 'Latest tech and AI news, automatically curated',
+    title: 'ジョージア🇬🇪ニュース',
+    description: 'ジョージアの最近のニュースを日本人の方向けて日本語でお届け',
     type: 'website'
   },
   twitter: {
     card: 'summary',
-    title: 'Unmanned Newsroom',
-    description: 'Latest tech and AI news, automatically curated'
+    title: 'ジョージア🇬🇪ニュース',
+    description: 'ジョージアの最近のニュースを日本人の方向けて日本語でお届け'
   }
 }
 
