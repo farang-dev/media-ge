@@ -25,7 +25,7 @@ export default function Home({
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-red-600">ジョージア🇬🇪ニュース</h1>
+        <h1 className="text-2xl font-bold text-georgian-red">ジョージア🇬🇪ニュース</h1>
         <p className="text-sm text-gray-600">ジョージアの最近のニュースを日本人の方向けて日本語でお届け</p>
       </header>
       <Suspense fallback={<div className="text-gray-600">Loading posts...</div>}>

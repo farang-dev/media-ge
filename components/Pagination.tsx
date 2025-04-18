@@ -61,7 +61,7 @@ export default function Pagination({ currentPage, totalPages }: PaginationProps)
           href={`/?page=${number}`}
           className={`px-3 py-1 border rounded ${
             number === currentPage
-              ? 'bg-red-600 text-white'
+              ? 'bg-georgian-red text-white'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >

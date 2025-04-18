@@ -21,7 +21,7 @@ export default function RelatedArticles({ posts }: RelatedArticlesProps) {
               className="block"
             >
               <h3
-                className="font-medium text-gray-900 mb-2 hover:text-red-600 transition-colors"
+                className="font-medium text-gray-900 mb-2 hover:text-georgian-red transition-colors"
                 dangerouslySetInnerHTML={{ __html: post.title.rendered }}
               />
               <div

@@ -25,7 +25,7 @@ export default function FullArticle({ post }: FullArticleProps) {
 
   return (
     <article className="max-w-3xl mx-auto px-4 py-8">
-      <Link href="/" className="text-red-600 hover:underline mb-4 inline-block">
+      <Link href="/" className="text-georgian-red hover:underline mb-4 inline-block">
         ← Back to all articles
       </Link>
 
