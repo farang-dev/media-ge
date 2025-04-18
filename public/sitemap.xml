@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <url>
+    <loc>https://www.unmanned-newsroom.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/googles-ai-safety-report-lacks-key-details</loc>
+    <lastmod>2025-04-18T08:56:21.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-18T08:56:21.000Z</news:publication_date>
+      <news:title>Google’s AI Safety Report Lacks Key&amp;nbsp;Details</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/ai-risk-advisor-launches-amid-trade-war-chaos</loc>
+    <lastmod>2025-04-18T08:53:11.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-18T08:53:11.000Z</news:publication_date>
+      <news:title>AI Risk Advisor Launches Amid Trade War&amp;nbsp;Chaos</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-eyed-cursor-before-3b-windsurf-deal</loc>
+    <lastmod>2025-04-18T08:50:14.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-18T08:50:14.000Z</news:publication_date>
+      <news:title>OpenAI Eyed Cursor Before $3B Windsurf&amp;nbsp;Deal</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/evaluators-report-limited-testing-window-for-openais-o3-ai-model</loc>
+    <lastmod>2025-04-17T12:55:15.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-17T12:55:15.000Z</news:publication_date>
+      <news:title>Evaluators Report Limited Testing Window for OpenAI&amp;#8217;s O3 AI&amp;nbsp;Model</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-nears-3-billion-acquisition-of-ai-coding-startup-windsurf</loc>
+    <lastmod>2025-04-17T12:54:31.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-17T12:54:31.000Z</news:publication_date>
+      <news:title>OpenAI Nears $3 Billion Acquisition of AI Coding Startup&amp;nbsp;Windsurf</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-introduces-protective-measures-in-new-ai-models-to-counter-biological-threats</loc>
+    <lastmod>2025-04-17T12:53:59.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-17T12:53:59.000Z</news:publication_date>
+      <news:title>OpenAI Introduces Protective Measures in New AI Models to Counter Biological&amp;nbsp;Threats</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/u-s-government-weighs-potential-ban-on-chinese-ai-firm-deepseek</loc>
+    <lastmod>2025-04-17T12:53:16.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-17T12:53:16.000Z</news:publication_date>
+      <news:title>U.S. Government Weighs Potential Ban on Chinese AI Firm&amp;nbsp;DeepSeek</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/xai-enhances-grok-ai-with-contextual-memory-capabilities</loc>
+    <lastmod>2025-04-17T12:52:43.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-17T12:52:43.000Z</news:publication_date>
+      <news:title>xAI Enhances Grok AI with Contextual Memory&amp;nbsp;Capabilities</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/q1-venture-capital-soars-yet-clouds-gather-over-2025-startup-prospects</loc>
+    <lastmod>2025-04-16T20:00:01.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T20:00:01.000Z</news:publication_date>
+      <news:title>Q1 Venture Capital Soars, Yet Clouds Gather Over 2025 Startup&amp;nbsp;Prospects</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-unveils-codex-cli-an-open-source-ai-programming-assistant-for-terminals</loc>
+    <lastmod>2025-04-16T19:59:05.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T19:59:05.000Z</news:publication_date>
+      <news:title>OpenAI Unveils Codex CLI: An Open-Source AI Programming Assistant for&amp;nbsp;Terminals</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-introduces-advanced-reasoning-ai-models-o3-and-o4-mini</loc>
+    <lastmod>2025-04-16T19:58:15.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T19:58:15.000Z</news:publication_date>
+      <news:title>OpenAI Introduces Advanced Reasoning AI Models: o3 and&amp;nbsp;o4-mini</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/reports-openai-negotiating-3-billion-purchase-of-ai-code-assistant-codeium</loc>
+    <lastmod>2025-04-16T19:56:42.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T19:56:42.000Z</news:publication_date>
+      <news:title>Reports: OpenAI Negotiating $3 Billion Purchase of AI Code Assistant&amp;nbsp;Codeium</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/deck-raises-12m-to-unlock-user-permissions-data-for-the-entire-internet</loc>
+    <lastmod>2025-04-16T17:23:52.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T17:23:52.000Z</news:publication_date>
+      <news:title>&lt;em&gt;Deck Raises $12M to Unlock User-Permissions Data for the Entire&amp;nbsp;Internet&lt;/em&gt;</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/microsoft-researchers-unveil-high-efficiency-ai-model-capable-of-running-on-cpus</loc>
+    <lastmod>2025-04-16T17:22:46.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T17:22:46.000Z</news:publication_date>
+      <news:title>&lt;em&gt;Microsoft Researchers Unveil High-Efficiency AI Model Capable of Running on&amp;nbsp;CPUs&lt;/em&gt;</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/startup-funding-hit-record-highs-in-q1-but-the-2025-outlook-remains-bleak</loc>
+    <lastmod>2025-04-16T17:21:48.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T17:21:48.000Z</news:publication_date>
+      <news:title>**Startup Funding Hit Record Highs in Q1, But the 2025 Outlook Remains&amp;nbsp;Bleak**</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-unveils-codex-cli-a-terminal-powered-ai-coding-assistant</loc>
+    <lastmod>2025-04-16T17:20:47.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T17:20:47.000Z</news:publication_date>
+      <news:title>**OpenAI Unveils Codex CLI: A Terminal-Powered AI Coding&amp;nbsp;Assistant**</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-rolls-out-pair-of-advanced-ai-reasoning-models-o3-and-o4-mini</loc>
+    <lastmod>2025-04-16T17:19:32.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <news:news>
+      <news:publication>
+        <news:name>Unmanned Newsroom</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2025-04-16T17:19:32.000Z</news:publication_date>
+      <news:title>**&lt;strong&gt;OpenAI Rolls Out Pair of Advanced AI Reasoning Models: o3 and o4-mini&lt;/strong&gt;**</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-plans-to-phase-out-gpt-4-5-its-largest-ever-ai-model-from-its-api-2</loc>
+    <lastmod>2025-04-15T10:59:21.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/debates-over-ai-benchmarking-have-reached-pokemon-2</loc>
+    <lastmod>2025-04-15T10:58:37.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/rlwrld-raises-14-8m-to-build-a-foundational-model-for-robotics-2</loc>
+    <lastmod>2025-04-15T10:58:13.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/apple-details-how-it-plans-to-improve-its-ai-models-by-privately-analyzing-user-data</loc>
+    <lastmod>2025-04-15T10:57:46.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/googles-newest-ai-model-is-designed-to-help-study-dolphin-speech</loc>
+    <lastmod>2025-04-15T08:09:48.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openais-new-gpt-4-1-ai-models-focus-on-coding</loc>
+    <lastmod>2025-04-15T08:09:25.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/openai-plans-to-phase-out-gpt-4-5-its-largest-ever-ai-model-from-its-api</loc>
+    <lastmod>2025-04-15T08:08:57.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/debates-over-ai-benchmarking-have-reached-pokemon</loc>
+    <lastmod>2025-04-15T08:08:31.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.unmanned-newsroom.com/rlwrld-raises-14-8m-to-build-a-foundational-model-for-robotics</loc>
+    <lastmod>2025-04-15T08:08:08.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
