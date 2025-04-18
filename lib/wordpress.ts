@@ -194,6 +194,38 @@ function getDummyPosts(): Post[] {
   ];
 }
 
+export async function fetchRelatedPosts(currentPostId: number, count: number = 3): Promise<Post[]> {
+  if (!WP_API_URL) {
+    console.error('WordPress API URL not configured');
+    return [];
+  }
+
+  try {
+    // Fetch recent posts excluding the current one
+    const response = await fetch(
+      `${WP_API_URL}/posts?_embed=author&per_page=${count + 1}&exclude=${currentPostId}`,
+      {
+        next: { revalidate: 10 },
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch related posts: ${response.statusText}`);
+    }
+
+    const posts = await response.json();
+
+    // Return only the requested number of posts
+    return posts.slice(0, count).map(formatPost);
+  } catch (error) {
+    console.error('Error fetching related posts:', error);
+    return [];
+  }
+}
+
 export async function publishPost(title: string, content: string, metaTitle?: string, metaDescription?: string): Promise<boolean> {
   if (!WP_API_URL) {
     console.error('WordPress API URL not configured');

@@ -1,7 +1,9 @@
-import { fetchPost } from '@/lib/wordpress';
+import { fetchPost, fetchRelatedPosts } from '@/lib/wordpress';
 import FullArticle from '@/components/FullArticle';
+import RelatedArticles from '@/components/RelatedArticles';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import Link from 'next/link';
 
 interface PostPageProps {
   params: {
@@ -55,5 +57,22 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   console.log(`Successfully fetched post: "${post.title.rendered}"`);
-  return <FullArticle post={post} />;
+
+  // Fetch related articles
+  const relatedPosts = await fetchRelatedPosts(post.id, 3);
+  console.log(`Fetched ${relatedPosts.length} related posts`);
+
+  return (
+    <>
+      <FullArticle post={post} />
+      <div className="max-w-3xl mx-auto px-4">
+        <RelatedArticles posts={relatedPosts} />
+        <div className="mt-8 pb-8">
+          <Link href="/" className="text-orange-500 hover:underline inline-block">
+            ← Back to all articles
+          </Link>
+        </div>
+      </div>
+    </>
+  );
 }
