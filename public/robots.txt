@@ -7,8 +7,5 @@ Disallow: /wp-includes/
 Disallow: /wp-content/plugins/
 Disallow: /wp-json/
 
-# Sitemap location
-Sitemap: https://fumixo5.wordpress.com/sitemap.xml
-
 # Primary website URL
 Sitemap: https://www.unmanned-newsroom.com/sitemap.xml
