@@ -1,11 +1,15 @@
 // Complete test script for crawling, rewriting, and posting to WordPress
 require('dotenv').config(); // Load environment variables
 const cheerio = require('cheerio');
-const puppeteer = require('puppeteer'); // Add puppeteer for JavaScript rendering
+// No longer using puppeteer
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const fs = require('fs');
 // We'll import the cleanupArticle function dynamically later
 // const { cleanupArticle } = require('../lib/article-processor');
+
+// Import custom modules
+const updatedSystemPrompt = require('./updated-system-prompt');
+const { cleanupContent } = require('./content-cleanup');
 
 // WordPress credentials from environment variables
 const WP_API_URL = process.env.WORDPRESS_API_URL;
@@ -13,7 +17,7 @@ const WP_CLIENT_ID = process.env.WORDPRESS_CLIENT_ID;
 const WP_CLIENT_SECRET = process.env.WORDPRESS_CLIENT_SECRET;
 const WP_USERNAME = process.env.WORDPRESS_USERNAME;
 const WP_PASSWORD = process.env.WORDPRESS_PASSWORD;
-const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://techcrunch.com/category/artificial-intelligence/';
+const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka';
 
 // Function to check if an article was published within the last 24 hours
 function isPublishedWithin24Hours(dateString) {
@@ -121,7 +125,7 @@ async function testWordPressConnection() {
   }
 }
 
-// 1. Crawl website to find articles using Puppeteer (handles JavaScript rendering)
+// 1. Crawl website to find articles
 async function crawlWebsite(url) {
   console.log(`Crawling website: ${url}`);
   try {
@@ -131,8 +135,7 @@ async function crawlWebsite(url) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        'Cache-Control': 'no-cache'
       }
     });
 
@@ -144,174 +147,90 @@ async function crawlWebsite(url) {
     fs.writeFileSync('raw-html.txt', html);
     console.log('Raw HTML saved to raw-html.txt');
 
-    // Use regex to extract article URLs - more reliable for TechCrunch
-    const articleUrlRegex = /href="(https:\/\/techcrunch\.com\/\d{4}\/\d{2}\/\d{2}\/[^"]+)"/g;
-    const matches = [...html.matchAll(articleUrlRegex)];
+    // Parse HTML with cheerio
+    const $ = cheerio.load(html);
+    const articleUrls = [];
 
-    console.log(`Found ${matches.length} article URLs using regex`);
+    // Look for article links with the specific pattern for civil.ge
+    $('a').each((i, element) => {
+      const href = $(element).attr('href');
+      if (href && href.includes('civil.ge/ka/archives/') && !href.includes('/category/') && !href.includes('/author/')) {
+        articleUrls.push(href);
+      }
+    });
 
-    // Extract unique article URLs
-    const articleUrls = [...new Set(matches.map(match => match[1]))];
-    console.log(`Found ${articleUrls.length} unique article URLs`);
+    // Remove duplicates
+    const uniqueUrls = [...new Set(articleUrls)];
+    console.log(`Found ${uniqueUrls.length} unique article URLs`);
 
-    // If regex approach failed, try a more aggressive browser approach
-    if (articleUrls.length === 0) {
-      console.log('No articles found with regex, trying browser approach with extended wait time...');
-
-      const browser = await puppeteer.launch({
-        headless: false, // Use visible browser to avoid detection
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080'],
-        defaultViewport: null
-      });
-
-      const page = await browser.newPage();
-
-      // Set multiple headers to appear more like a real browser
-      await page.setExtraHTTPHeaders({
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      });
-
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-
-      // Navigate with extended timeout
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
-      console.log('Page loaded');
-
-      // Wait longer for dynamic content
-      await page.waitForTimeout(10000);
-
-      // Take a screenshot for debugging
-      await page.screenshot({ path: 'debug-screenshot-extended.png', fullPage: true });
-
-      // Try multiple approaches to find articles
-      const foundArticles = await page.evaluate(() => {
-        const articles = [];
-
-        // Approach 1: Look for article cards/containers
-        const articleCards = document.querySelectorAll('article, .post-block, .post-item, .story-card');
-        if (articleCards.length > 0) {
-          articleCards.forEach(card => {
-            const linkElement = card.querySelector('a[href*="techcrunch.com"]');
-            const titleElement = card.querySelector('h2, h3, .post-title, .post-block__title');
-
-            if (linkElement && titleElement) {
-              const url = linkElement.href;
-              const title = titleElement.textContent.trim();
-
-              if (url && title && title.length > 10 && url.includes('/20')) {
-                articles.push({ title, url });
-              }
-            }
-          });
-        }
-
-        // Approach 2: Look for specific TechCrunch selectors
-        if (articles.length === 0) {
-          const links = document.querySelectorAll('.post-block__title a, .article-link, .post-title a');
-          links.forEach(link => {
-            const url = link.href;
-            const title = link.textContent.trim();
-
-            if (url && title && title.length > 10 && url.includes('techcrunch.com') && url.includes('/20')) {
-              articles.push({ title, url });
-            }
-          });
-        }
-
-        // Approach 3: Find all links that look like articles
-        if (articles.length === 0) {
-          const allLinks = document.querySelectorAll('a');
-          allLinks.forEach(link => {
-            const url = link.href;
-            const title = link.textContent.trim();
-
-            if (url &&
-                url.includes('techcrunch.com') &&
-                url.includes('/20') &&
-                !url.includes('/category/') &&
-                !url.includes('/author/') &&
-                title &&
-                title.length > 15) {
-
-              articles.push({ title, url });
-            }
-          });
-        }
-
-        return articles;
-      });
-
-      console.log(`Found ${foundArticles.length} articles with browser approach`);
-
-      // Add timestamps
-      const articlesWithDates = foundArticles.map(article => ({
-        ...article,
+    if (uniqueUrls.length === 0) {
+      console.log('No articles found, returning test article for pipeline testing');
+      return [{
+        title: "Test Article from " + url,
+        url: url,
         publishedDate: new Date().toISOString()
-      }));
+      }];
+    }
 
-      await browser.close();
+    // Process the first 5 articles
+    const articles = [];
+    for (let i = 0; i < Math.min(5, uniqueUrls.length); i++) {
+      const articleUrl = uniqueUrls[i];
+      console.log(`Getting title for article: ${articleUrl}`);
 
-      if (articlesWithDates.length > 0) {
-        return articlesWithDates.slice(0, 5);
-      }
-    } else {
-      // Process the URLs found with regex
-      const articles = [];
-      const browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-
-      for (let i = 0; i < Math.min(5, articleUrls.length); i++) {
-        const articleUrl = articleUrls[i];
-        console.log(`Getting title for article: ${articleUrl}`);
-
-        try {
-          const page = await browser.newPage();
-          await page.goto(articleUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-          const title = await page.evaluate(() => {
-            const titleElement = document.querySelector('h1');
-            return titleElement ? titleElement.textContent.trim() : '';
-          });
-
-          if (title) {
-            articles.push({
-              title,
-              url: articleUrl,
-              publishedDate: new Date().toISOString()
-            });
-            console.log(`Added article: ${title}`);
+      try {
+        const articleResponse = await fetch(articleUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Cache-Control': 'no-cache'
           }
+        });
 
-          await page.close();
-        } catch (error) {
-          console.error(`Error getting title for ${articleUrl}:`, error);
+        if (!articleResponse.ok) {
+          console.log(`Failed to fetch article: ${articleResponse.status} ${articleResponse.statusText}`);
+          continue;
         }
+
+        const articleHtml = await articleResponse.text();
+        const $article = cheerio.load(articleHtml);
+
+        // Extract title
+        const title = $article('h1').first().text().trim();
+        console.log(`Title: ${title}`);
+
+        if (title) {
+          articles.push({
+            title,
+            url: articleUrl,
+            publishedDate: new Date().toISOString()
+          });
+          console.log(`Added article: ${title}`);
+        }
+      } catch (error) {
+        console.error(`Error getting title for ${articleUrl}:`, error);
       }
 
-      await browser.close();
+      // Add a small delay between requests
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
 
-      if (articles.length > 0) {
-        return articles;
-      }
+    if (articles.length > 0) {
+      return articles;
     }
 
     // Last resort fallback
-    console.log('No articles found, returning test article for pipeline testing');
     return [{
-      title: "Test Article: AI Developments at TechCrunch",
-      url: "https://techcrunch.com/category/artificial-intelligence/",
+      title: "Test Article from " + url,
+      url: url,
       publishedDate: new Date().toISOString()
     }];
   } catch (error) {
     console.error('Error crawling website:', error);
     return [{
-      title: "Test Article: AI Developments at TechCrunch",
-      url: "https://techcrunch.com/category/artificial-intelligence/",
+      title: "Test Article from " + url,
+      url: url,
       publishedDate: new Date().toISOString()
     }];
   }
@@ -320,124 +239,119 @@ async function crawlWebsite(url) {
 // Alternative crawling approach
 async function crawlAlternative(url) {
   try {
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    const page = await browser.newPage();
-
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-
-    // Try a more generic approach
-    const articles = await page.evaluate(() => {
-      const results = [];
-      const links = document.querySelectorAll('a');
-
-      links.forEach(link => {
-        const href = link.href;
-        if (href && href.includes('techcrunch.com') &&
-            (href.includes('/20') || href.includes('artificial-intelligence'))) {
-          const title = link.textContent.trim();
-
-          if (title && title.length > 15 && !results.some(a => a.url === href)) {
-            results.push({
-              title,
-              url: href,
-              publishedDate: new Date().toISOString()
-            });
-          }
-        }
-      });
-
-      return results;
+    console.log('Using alternative crawling approach...');
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Cache-Control': 'no-cache'
+      }
     });
 
-    await browser.close();
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const articles = [];
+
+    // Look for all links
+    $('a').each((i, element) => {
+      const href = $(element).attr('href');
+      const title = $(element).text().trim();
+
+      if (href &&
+          href.includes('civil.ge/ka/archives/') &&
+          title &&
+          title.length > 5 &&
+          !href.includes('/category/') &&
+          !href.includes('/author/') &&
+          !articles.some(a => a.url === href)) {
+
+        articles.push({
+          title,
+          url: href,
+          publishedDate: new Date().toISOString()
+        });
+      }
+    });
+
     console.log(`Found ${articles.length} articles with alternative approach`);
-
-    return articles.slice(0, 1);
+    return articles.slice(0, 5);
   } catch (error) {
     console.error('Error in alternative crawling:', error);
     return [];
   }
 }
 
-// 2. Crawl article content using Puppeteer
+// 2. Crawl article content
 async function crawlArticleContent(url) {
   console.log(`Crawling article content: ${url}`);
-  let browser;
   try {
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    const page = await browser.newPage();
-
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-
-    // Wait for content to load - using TechCrunch specific selectors
-    await page.waitForSelector('.article-content, .article__content, .content-column, .article-container', { timeout: 10000 })
-      .catch(() => console.log('Content selector timeout - continuing anyway'));
-
-    // Extract content - try multiple TechCrunch-specific selectors
-    const content = await page.evaluate(() => {
-      // Try multiple selectors that might contain the article content
-      const selectors = [
-        '.article-content',
-        '.article__content',
-        '.content-column',
-        '.article-container',
-        'article',
-        '.post-block__content'
-      ];
-
-      for (const selector of selectors) {
-        const element = document.querySelector(selector);
-        if (element) {
-          return element.innerHTML;
-        }
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Cache-Control': 'no-cache'
       }
+    });
 
-      // Fallback: try to find paragraphs within the main content area
-      const paragraphs = document.querySelectorAll('article p, main p, .content p');
+    if (!response.ok) {
+      console.error(`Failed to fetch article: ${response.status} ${response.statusText}`);
+      return { content: null, publishDate: null };
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    // Extract content with site-specific selectors
+    let content = '';
+    const selectors = [
+      '.entry-content',
+      '.post-content',
+      '.content',
+      'article .content',
+      '.article-body',
+      '.article-text',
+      'article'
+    ];
+
+    for (const selector of selectors) {
+      if ($(selector).length > 0) {
+        content = $(selector).html();
+        break;
+      }
+    }
+
+    // Fallback: try to find paragraphs within the main content area
+    if (!content) {
+      const paragraphs = $('article p, main p, .content p');
       if (paragraphs.length > 0) {
-        return Array.from(paragraphs).map(p => p.outerHTML).join('');
+        content = paragraphs.map((i, el) => $.html(el)).get().join('');
       }
-
-      return '';
-    });
+    }
 
     // Extract the publication date
-    const publishDate = await page.evaluate(() => {
-      // Try different selectors for date information
-      const dateSelectors = [
-        'time',
-        '.article__date',
-        '.article-date',
-        '.post-date',
-        '.post-block__date',
-        '[datetime]',
-        '.byline time'
-      ];
+    let publishDate = null;
+    const dateSelectors = [
+      'time',
+      '.article__date',
+      '.article-date',
+      '.post-date',
+      '[datetime]',
+      '.byline time'
+    ];
 
-      for (const selector of dateSelectors) {
-        const dateElement = document.querySelector(selector);
-        if (dateElement) {
-          // Try to get the datetime attribute first
-          const datetime = dateElement.getAttribute('datetime');
-          if (datetime) return datetime;
-
-          // Otherwise get the text content
-          return dateElement.textContent.trim();
-        }
+    for (const selector of dateSelectors) {
+      if ($(selector).length > 0) {
+        const dateElement = $(selector).first();
+        publishDate = dateElement.attr('datetime') || dateElement.text().trim();
+        break;
       }
-
-      return null;
-    });
-
-    await browser.close();
-    browser = null;
+    }
 
     if (!content) {
       console.log('No content found on the page');
@@ -448,10 +362,6 @@ async function crawlArticleContent(url) {
   } catch (error) {
     console.error('Error crawling article content:', error);
     return { content: null, publishDate: null };
-  } finally {
-    if (browser) {
-      await browser.close().catch(err => console.error('Error closing browser:', err));
-    }
   }
 }
 
@@ -474,15 +384,15 @@ async function rewriteArticle(article) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://lead-media.vercel.app/',
-        'X-Title': 'Unmanned Newsroom'
+        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://media-ge.vercel.app/',
+        'X-Title': 'Georgia News'
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat-v3-0324:free',
+        model: 'google/gemini-2.0-flash-thinking-exp:free',
         messages: [
           {
             role: 'system',
-            content: 'あなたは「ジョージア🇬🇪ニュース」のSEO専門家です。ジョージアのニュース記事に対して、日本語のSEO最適化されたタイトルとメタ説明を作成してください。タイトルは注目を引くもので、関連キーワードを含み、60文字以内にしてください。メタ説明は記事を要約し、キーワードを含み、155文字以内にしてください。\n\n応答形式は必ず次のようにしてください：\nTITLE: [あなたのSEOタイトル]\nMETA: [あなたのメタ説明]'
+            content: 'あなたは「ジョージアニュース」のSEO専門家です。ジョージアのニュース記事に対して、日本語のSEO最適化されたタイトルとメタ説明を作成してください。タイトルは注目を引くもので、関連キーワードを含み、60文字以内にしてください。メタ説明は記事を要約し、キーワードを含み、155文字以内にしてください。\n\n重要：絵文字や特殊文字（#など）は使用しないでください。\n\n応答形式は必ず次のようにしてください：\nTITLE: [あなたのSEOタイトル]\nMETA: [あなたのメタ説明]'
           },
           {
             role: 'user',
@@ -500,6 +410,12 @@ async function rewriteArticle(article) {
     }
 
     const seoData = await seoResponse.json();
+    console.log('SEO API response:', JSON.stringify(seoData, null, 2));
+
+    if (!seoData.choices || !seoData.choices[0] || !seoData.choices[0].message || !seoData.choices[0].message.content) {
+      throw new Error('Invalid response format from SEO API');
+    }
+
     const seoText = seoData.choices[0].message.content;
 
     // Extract SEO title and meta description
@@ -525,11 +441,11 @@ async function rewriteArticle(article) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://lead-media.vercel.app/',
-        'X-Title': 'Unmanned Newsroom'
+        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://media-ge.vercel.app/',
+        'X-Title': 'Georgia News'
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat-v3-0324:free',
+        model: 'google/gemini-2.0-flash-thinking-exp:free',
         messages: [
           {
             role: 'system',
@@ -551,6 +467,12 @@ async function rewriteArticle(article) {
     }
 
     const data = await response.json();
+    console.log('Translation API response:', JSON.stringify(data, null, 2));
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      throw new Error('Invalid response format from translation API');
+    }
+
     const rewrittenText = data.choices[0].message.content;
 
     // Extract the title and content
@@ -566,8 +488,16 @@ async function rewriteArticle(article) {
       .replace(/Subscribe for the industry[\s\S]*?Privacy Notice\./g, '')
       .replace(/Every weekday and Sunday[\s\S]*?Privacy Notice\./g, '')
       .replace(/By submitting your email[\s\S]*?Privacy Notice\./g, '')
-      .replace(/TechCrunch's AI experts[\s\S]*?Privacy Notice\./g, '')
-      .replace(/Startups are the core[\s\S]*?Privacy Notice\./g, '');
+      .replace(/Privacy Notice\./g, '')
+      .replace(/Startups are the core[\s\S]*?Privacy Notice\./g, '')
+      // Remove flag emojis
+      .replace(/\ud83c\uddec\ud83c\uddea|\ud83c\uddef\ud83c\uddf5|\ud83c\uddfa\ud83c\uddf8|\ud83c\uddea\ud83c\uddfa|\ud83c\uddec\ud83c\udde7|\ud83c\udde9\ud83c\uddea|\ud83c\uddeb\ud83c\uddf7|\ud83c\uddee\ud83c\uddf9|\ud83c\uddea\ud83c\uddf8|\ud83c\uddf7\ud83c\uddfa|\ud83c\udde8\ud83c\uddf3|\ud83c\uddf0\ud83c\uddf7|\ud83c\uddee\ud83c\uddf3|\ud83c\udde7\ud83c\uddf7|\ud83c\uddf2\ud83c\uddfd|\ud83c\udde8\ud83c\udde6|\ud83c\udde6\ud83c\uddfa|\ud83c\uddf3\ud83c\uddff|\ud83c\uddff\ud83c\udde6|\ud83c\uddef\ud83c\uddf5/g, '')
+      // Replace markdown headings with HTML headings
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      // Fix any other special characters
+      .replace(/[\u{1F300}-\u{1F5FF}|\u{1F900}-\u{1F9FF}|\u{1F600}-\u{1F64F}|\u{1F680}-\u{1F6FF}|\u{2600}-\u{26FF}|\u{2700}-\u{27BF}|\u{1F1E0}-\u{1F1FF}|\u{1F191}-\u{1F251}|\u{1F004}|\u{1F0CF}|\u{1F170}-\u{1F171}|\u{1F17E}-\u{1F17F}|\u{1F18E}|\u{3030}|\u{2B50}|\u{2B55}|\u{2934}-\u{2935}|\u{2B05}-\u{2B07}|\u{2B1B}-\u{2B1C}|\u{3297}|\u{3299}|\u{303D}|\u{00A9}|\u{00AE}|\u{2122}|\u{23F3}|\u{24C2}|\u{23E9}-\u{23EF}|\u{25AA}-\u{25AB}|\u{25FB}-\u{25FE}|\u{25B6}|\u{25C0}|\u{2604}|\u{2049}|\u{203C}]/gu, '');
 
     console.log(`Rewritten title: ${title}`);
     console.log(`Rewritten content (first 100 chars): ${cleanedContent.substring(0, 100)}...`);
@@ -640,17 +570,17 @@ async function postToWordPress(article, rewrittenArticle) {
   cleanedContent = cleanedContent.replace(/Subscribe for the industry[\s\S]*?Privacy Notice\./g, '');
   cleanedContent = cleanedContent.replace(/Every weekday and Sunday[\s\S]*?Privacy Notice\./g, '');
   cleanedContent = cleanedContent.replace(/By submitting your email[\s\S]*?Privacy Notice\./g, '');
-  cleanedContent = cleanedContent.replace(/TechCrunch's AI experts[\s\S]*?Privacy Notice\./g, '');
+  cleanedContent = cleanedContent.replace(/Privacy Notice\./g, '');
   cleanedContent = cleanedContent.replace(/Startups are the core[\s\S]*?Privacy Notice\./g, '');
 
   // Remove Popular Stories section
   cleanedContent = cleanedContent.replace(/\*\*Popular Stories:\*\*[\s\S]*?(?=\n\n|\*\*|$)/g, '');
 
   // Remove Related Articles section - multiple patterns to catch different formats
-  cleanedContent = cleanedContent.replace(/\*\*Read More on TechCrunch:\*\*[\s\S]*$/g, '');
+  cleanedContent = cleanedContent.replace(/\*\*Read More\*\*[\s\S]*$/g, '');
   cleanedContent = cleanedContent.replace(/\*\*Related Articles\*\*[\s\S]*$/g, '');
   cleanedContent = cleanedContent.replace(/\*\*Related Articles:\*\*[\s\S]*$/g, '');
-  cleanedContent = cleanedContent.replace(/Read More on TechCrunch:[\s\S]*$/g, '');
+  cleanedContent = cleanedContent.replace(/Read More[\s\S]*$/g, '');
   cleanedContent = cleanedContent.replace(/Related Articles:[\s\S]*$/g, '');
 
   // Remove individual related article links
@@ -674,11 +604,19 @@ async function postToWordPress(article, rewrittenArticle) {
   // Convert any remaining italic formatting to HTML
   cleanedContent = cleanedContent.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
+  // Remove flag emojis
+  cleanedContent = cleanedContent.replace(/\ud83c\uddec\ud83c\uddea|\ud83c\uddef\ud83c\uddf5|\ud83c\uddfa\ud83c\uddf8|\ud83c\uddea\ud83c\uddfa|\ud83c\uddec\ud83c\udde7|\ud83c\udde9\ud83c\uddea|\ud83c\uddeb\ud83c\uddf7|\ud83c\uddee\ud83c\uddf9|\ud83c\uddea\ud83c\uddf8|\ud83c\uddf7\ud83c\uddfa|\ud83c\udde8\ud83c\uddf3|\ud83c\uddf0\ud83c\uddf7|\ud83c\uddee\ud83c\uddf3|\ud83c\udde7\ud83c\uddf7|\ud83c\uddf2\ud83c\uddfd|\ud83c\udde8\ud83c\udde6|\ud83c\udde6\ud83c\uddfa|\ud83c\uddf3\ud83c\uddff|\ud83c\uddff\ud83c\udde6|\ud83c\uddef\ud83c\uddf5/g, '');
+
+  // Replace markdown headings with HTML headings
+  cleanedContent = cleanedContent.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  cleanedContent = cleanedContent.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  cleanedContent = cleanedContent.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Fix any other special characters
+  cleanedContent = cleanedContent.replace(/[\u{1F300}-\u{1F5FF}|\u{1F900}-\u{1F9FF}|\u{1F600}-\u{1F64F}|\u{1F680}-\u{1F6FF}|\u{2600}-\u{26FF}|\u{2700}-\u{27BF}|\u{1F1E0}-\u{1F1FF}|\u{1F191}-\u{1F251}|\u{1F004}|\u{1F0CF}|\u{1F170}-\u{1F171}|\u{1F17E}-\u{1F17F}|\u{1F18E}|\u{3030}|\u{2B50}|\u{2B55}|\u{2934}-\u{2935}|\u{2B05}-\u{2B07}|\u{2B1B}-\u{2B1C}|\u{3297}|\u{3299}|\u{303D}|\u{00A9}|\u{00AE}|\u{2122}|\u{23F3}|\u{24C2}|\u{23E9}-\u{23EF}|\u{25AA}-\u{25AB}|\u{25FB}-\u{25FE}|\u{25B6}|\u{25C0}|\u{2604}|\u{2049}|\u{203C}]/gu, '');
+
   // Remove any trailing whitespace
   cleanedContent = cleanedContent.trim();
-
-  // Define author name for WordPress metadata
-  const authorName = 'Fumi Nozawa';
 
   // For WordPress.com, we need to use OAuth2 authentication
   try {
@@ -711,6 +649,19 @@ async function postToWordPress(article, rewrittenArticle) {
     console.log('Access token obtained successfully!');
     const accessToken = tokenData.access_token;
 
+    // Create a consistent excerpt from the content (exactly 100 characters)
+    const stripHtml = (html) => html.replace(/<[^>]*>/g, '');
+    const contentText = stripHtml(cleanedContent);
+
+    // Get the first sentence or first 100 characters, whichever is shorter
+    let excerpt = '';
+    const firstSentence = contentText.split('.')[0];
+    if (firstSentence && firstSentence.length <= 100) {
+      excerpt = firstSentence + '.';
+    } else {
+      excerpt = contentText.substring(0, 100) + '...';
+    }
+
     const response = await fetch(`${WP_API_URL}/posts`, {
       method: 'POST',
       headers: {
@@ -720,12 +671,12 @@ async function postToWordPress(article, rewrittenArticle) {
       body: JSON.stringify({
         title: title,
         content: cleanedContent,
+        excerpt: excerpt, // Consistent excerpt for all articles
         status: 'publish',
         author: 1, // Use the user ID of the WordPress account (usually 1 for the primary admin)
-        author_name: authorName, // Use the same readable author name
         meta: {
           _yoast_wpseo_title: metaTitle || title,
-          _yoast_wpseo_metadesc: metaDescription || cleanedContent.substring(0, 155) + '...'
+          _yoast_wpseo_metadesc: metaDescription || contentText.substring(0, 155) + '...'
         }
       })
     });

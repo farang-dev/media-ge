@@ -11,7 +11,7 @@ interface ArticleListProps {
 export default function ArticleList({ posts, currentPage, totalPages }: ArticleListProps) {
   return (
     <>
-      <div className="space-y-1">
+      <div className="space-y-2 bg-white rounded-lg shadow-sm p-4">
         {posts.map((post, index) => (
           <ArticleItem
             key={post.id}

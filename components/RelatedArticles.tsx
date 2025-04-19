@@ -12,7 +12,7 @@ export default function RelatedArticles({ posts }: RelatedArticlesProps) {
 
   return (
     <div className="mt-12 pt-6 border-t border-gray-200">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">Related Articles</h2>
+      <h2 className="text-xl font-bold mb-4 text-gray-800">そのほかの記事</h2>
       <div className="grid gap-4 md:grid-cols-3 sm:grid-cols-2 grid-cols-1">
         {posts.map((post) => (
           <div key={post.id} className="bg-white p-4 rounded shadow-sm hover:shadow-md transition-shadow">
