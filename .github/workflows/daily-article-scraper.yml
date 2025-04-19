@@ -23,31 +23,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Debug Environment Variables
+      - name: Create .env file
         run: |
-          echo "Checking environment variables..."
-          echo "WORDPRESS_API_URL is set: ${{ secrets.WORDPRESS_API_URL != '' }}"
-          echo "OPENROUTER_API_KEY is set: ${{ secrets.OPENROUTER_API_KEY != '' }}"
-          echo "OPENROUTER_API_KEY length: ${{ length(secrets.OPENROUTER_API_KEY) }}"
+          echo "Creating .env file with secrets..."
+          echo "WORDPRESS_API_URL=${{ secrets.WORDPRESS_API_URL }}" > .env
+          echo "WORDPRESS_CLIENT_ID=${{ secrets.WORDPRESS_CLIENT_ID }}" >> .env
+          echo "WORDPRESS_CLIENT_SECRET=${{ secrets.WORDPRESS_CLIENT_SECRET }}" >> .env
+          echo "WORDPRESS_USERNAME=${{ secrets.WORDPRESS_USERNAME }}" >> .env
+          echo "WORDPRESS_PASSWORD=${{ secrets.WORDPRESS_PASSWORD }}" >> .env
+          echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
+          echo "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> .env
+          echo "Created .env file with the following variables:"
+          cat .env | grep -v PASSWORD | grep -v SECRET | grep -v KEY
 
       - name: Run article scraper and publisher
-        run: |
-          # Add explicit check for OpenRouter API key
-          if [ -z "$OPENROUTER_API_KEY" ]; then
-            echo "ERROR: OPENROUTER_API_KEY is not set or empty"
-            exit 1
-          else
-            echo "OPENROUTER_API_KEY is set and has length: ${#OPENROUTER_API_KEY}"
-            node scripts/test-full-process.js
-          fi
-        env:
-          # WordPress.com API Configuration
-          WORDPRESS_API_URL: ${{ secrets.WORDPRESS_API_URL }}
-          WORDPRESS_CLIENT_ID: ${{ secrets.WORDPRESS_CLIENT_ID }}
-          WORDPRESS_CLIENT_SECRET: ${{ secrets.WORDPRESS_CLIENT_SECRET }}
-          WORDPRESS_USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
-          WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
-          # OpenRouter API Configuration
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          # Site URL
-          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        run: node scripts/test-full-process.js

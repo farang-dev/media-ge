@@ -32,24 +32,25 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Create .env file
+      run: |
+        echo "Creating .env file with secrets..."
+        echo "WORDPRESS_API_URL=${{ secrets.WORDPRESS_API_URL }}" > .env
+        echo "WORDPRESS_CLIENT_ID=${{ secrets.WORDPRESS_CLIENT_ID }}" >> .env
+        echo "WORDPRESS_CLIENT_SECRET=${{ secrets.WORDPRESS_CLIENT_SECRET }}" >> .env
+        echo "WORDPRESS_USERNAME=${{ secrets.WORDPRESS_USERNAME }}" >> .env
+        echo "WORDPRESS_PASSWORD=${{ secrets.WORDPRESS_PASSWORD }}" >> .env
+        echo "WORDPRESS_API_KEY=${{ secrets.WORDPRESS_API_KEY }}" >> .env
+        echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
+        echo "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> .env
+        echo "Created .env file with the following variables:"
+        cat .env | grep -v PASSWORD | grep -v SECRET | grep -v KEY
+
     - name: Run scraper script
       run: node scripts/test-full-process.js
-      env:
-        # Add all your environment variables here
-        WORDPRESS_API_URL: ${{ secrets.WORDPRESS_API_URL }}
-        WORDPRESS_USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
-        WORDPRESS_API_KEY: ${{ secrets.WORDPRESS_API_KEY }}
-        WORDPRESS_CLIENT_ID: ${{ secrets.WORDPRESS_CLIENT_ID }}
-        WORDPRESS_CLIENT_SECRET: ${{ secrets.WORDPRESS_CLIENT_SECRET }}
-        WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
-        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
 
     - name: Generate sitemap
       run: node scripts/generate-sitemap.js
-      env:
-        WORDPRESS_API_URL: ${{ secrets.WORDPRESS_API_URL }}
-        NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
 
     - name: Commit and push sitemap changes
       run: |
