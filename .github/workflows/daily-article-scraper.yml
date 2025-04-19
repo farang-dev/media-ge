@@ -23,8 +23,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Debug Environment Variables
+        run: |
+          echo "Checking environment variables..."
+          echo "WORDPRESS_API_URL is set: ${{ secrets.WORDPRESS_API_URL != '' }}"
+          echo "OPENROUTER_API_KEY is set: ${{ secrets.OPENROUTER_API_KEY != '' }}"
+          echo "OPENROUTER_API_KEY length: ${{ length(secrets.OPENROUTER_API_KEY) }}"
+
       - name: Run article scraper and publisher
-        run: node scripts/test-full-process.js
+        run: |
+          # Add explicit check for OpenRouter API key
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "ERROR: OPENROUTER_API_KEY is not set or empty"
+            exit 1
+          else
+            echo "OPENROUTER_API_KEY is set and has length: ${#OPENROUTER_API_KEY}"
+            node scripts/test-full-process.js
+          fi
         env:
           # WordPress.com API Configuration
           WORDPRESS_API_URL: ${{ secrets.WORDPRESS_API_URL }}

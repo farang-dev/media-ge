@@ -367,6 +367,14 @@ async function crawlArticleContent(url) {
 
 // 3. Rewrite article using OpenRouter API with SEO optimization
 async function rewriteArticle(article) {
+  // Add more debugging for the OpenRouter API key
+  console.log('Environment variables:');
+  console.log('OPENROUTER_API_KEY exists:', !!process.env.OPENROUTER_API_KEY);
+  if (process.env.OPENROUTER_API_KEY) {
+    console.log('OPENROUTER_API_KEY length:', process.env.OPENROUTER_API_KEY.length);
+    console.log('OPENROUTER_API_KEY first 3 chars:', process.env.OPENROUTER_API_KEY.substring(0, 3));
+  }
+
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
     console.error('OpenRouter API key not configured');
