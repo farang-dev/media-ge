@@ -32,9 +32,7 @@ jobs:
           WORDPRESS_CLIENT_SECRET: ${{ secrets.WORDPRESS_CLIENT_SECRET }}
           WORDPRESS_USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
           WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
-
           # OpenRouter API Configuration
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-
           # Site URL
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
