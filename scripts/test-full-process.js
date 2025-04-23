@@ -396,7 +396,7 @@ async function rewriteArticle(article) {
         'X-Title': 'Georgia News'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-thinking-exp:free',
+        model: 'microsoft/mai-ds-r1:free',
         messages: [
           {
             role: 'system',
@@ -453,7 +453,7 @@ async function rewriteArticle(article) {
         'X-Title': 'Georgia News'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-thinking-exp:free',
+        model: 'microsoft/mai-ds-r1:free',
         messages: [
           {
             role: 'system',
