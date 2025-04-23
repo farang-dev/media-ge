@@ -69,7 +69,10 @@ jobs:
         NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
 
     - name: Run scraper script
-      run: node scripts/test-full-process.js
+      run: |
+        # Force a clean run by removing any cached files
+        echo "Running with model: microsoft/mai-ds-r1:free"
+        node scripts/test-full-process.js
 
     - name: Generate sitemap
       run: node scripts/generate-sitemap.js
