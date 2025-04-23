@@ -1,0 +1,66 @@
+name: New Article Processor
+
+on:
+  schedule:
+    # Run daily at 7:00 AM UTC
+    - cron: '0 7 * * *'
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  process-articles:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        run: |
+          echo "Creating .env file with secrets..."
+          cat > .env << EOL
+          WORDPRESS_API_URL=${{ secrets.WORDPRESS_API_URL }}
+          WORDPRESS_CLIENT_ID=${{ secrets.WORDPRESS_CLIENT_ID }}
+          WORDPRESS_CLIENT_SECRET=${{ secrets.WORDPRESS_CLIENT_SECRET }}
+          WORDPRESS_USERNAME=${{ secrets.WORDPRESS_USERNAME }}
+          WORDPRESS_PASSWORD=${{ secrets.WORDPRESS_PASSWORD }}
+          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          TARGET_WEBSITE=https://civil.ge/ka/archives/category/news-ka
+          EOL
+
+          echo "Created .env file with the following variables:"
+          cat .env | grep -v PASSWORD | grep -v SECRET | grep -v KEY
+
+      - name: Check OpenRouter API key
+        run: |
+          echo "Checking OpenRouter API key..."
+          if grep -q "OPENROUTER_API_KEY" .env; then
+            KEY=$(grep "OPENROUTER_API_KEY" .env | cut -d '=' -f2)
+            if [ -n "$KEY" ]; then
+              echo "OpenRouter API key is set (length: ${#KEY})"
+              echo "First 3 characters: ${KEY:0:3}"
+            else
+              echo "OpenRouter API key is empty"
+              exit 1
+            fi
+          else
+            echo "OpenRouter API key is not in .env file"
+            exit 1
+          fi
+
+      - name: Print model information
+        run: |
+          echo "This workflow will use the microsoft/mai-ds-r1:free model"
+          echo "Checking model in script..."
+          grep -n "model:" scripts/test-full-process.js
+
+      - name: Run article processor
+        run: node scripts/new-article-processor.js
