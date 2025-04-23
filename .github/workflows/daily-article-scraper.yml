@@ -26,15 +26,39 @@ jobs:
       - name: Create .env file
         run: |
           echo "Creating .env file with secrets..."
-          echo "WORDPRESS_API_URL=${{ secrets.WORDPRESS_API_URL }}" > .env
-          echo "WORDPRESS_CLIENT_ID=${{ secrets.WORDPRESS_CLIENT_ID }}" >> .env
-          echo "WORDPRESS_CLIENT_SECRET=${{ secrets.WORDPRESS_CLIENT_SECRET }}" >> .env
-          echo "WORDPRESS_USERNAME=${{ secrets.WORDPRESS_USERNAME }}" >> .env
-          echo "WORDPRESS_PASSWORD=${{ secrets.WORDPRESS_PASSWORD }}" >> .env
-          echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
-          echo "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> .env
+          # Check if secrets are set
+          if [ -z "$WORDPRESS_API_URL" ]; then
+            echo "ERROR: WORDPRESS_API_URL is not set in GitHub secrets"
+            exit 1
+          fi
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "ERROR: OPENROUTER_API_KEY is not set in GitHub secrets"
+            exit 1
+          fi
+
+          # Create .env file
+          echo "WORDPRESS_API_URL=$WORDPRESS_API_URL" > .env
+          echo "WORDPRESS_CLIENT_ID=$WORDPRESS_CLIENT_ID" >> .env
+          echo "WORDPRESS_CLIENT_SECRET=$WORDPRESS_CLIENT_SECRET" >> .env
+          echo "WORDPRESS_USERNAME=$WORDPRESS_USERNAME" >> .env
+          echo "WORDPRESS_PASSWORD=$WORDPRESS_PASSWORD" >> .env
+          echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" >> .env
+          echo "NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL" >> .env
+          echo "TARGET_WEBSITE=https://civil.ge/ka/archives/category/news-ka" >> .env
+
           echo "Created .env file with the following variables:"
           cat .env | grep -v PASSWORD | grep -v SECRET | grep -v KEY
+        env:
+          WORDPRESS_API_URL: ${{ secrets.WORDPRESS_API_URL }}
+          WORDPRESS_CLIENT_ID: ${{ secrets.WORDPRESS_CLIENT_ID }}
+          WORDPRESS_CLIENT_SECRET: ${{ secrets.WORDPRESS_CLIENT_SECRET }}
+          WORDPRESS_USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
+          WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+
+      - name: Verify secrets
+        run: node scripts/verify-secrets.js
 
       - name: Run article scraper and publisher
         run: node scripts/test-full-process.js
