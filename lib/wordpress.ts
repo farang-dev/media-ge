@@ -13,6 +13,7 @@ export interface Post {
   date: string;
   author: number;
   slug: string;
+  source?: string; // Added source field to store the domain of the original article
   meta?: {
     yoast_title?: string;
     yoast_description?: string;
@@ -144,6 +145,19 @@ export async function fetchPost(slug: string): Promise<Post | null> {
 }
 
 function formatPost(post: any): Post {
+  // Use the TARGET_WEBSITE environment variable for the source
+  // Default to civil.ge if not available
+  const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka';
+  let source = '';
+  try {
+    const url = new URL(TARGET_WEBSITE);
+    source = url.hostname.replace('www.', '');
+  } catch (error) {
+    console.error('Error extracting source from TARGET_WEBSITE:', error);
+    // Default to civil.ge if we can't extract the domain
+    source = 'civil.ge';
+  }
+
   return {
     id: post.id,
     title: {
@@ -159,6 +173,7 @@ function formatPost(post: any): Post {
     date: post.date,
     author: post.author,
     slug: post.slug,
+    source: source,
     _embedded: post._embedded || {
       author: [{
         name: 'Anonymous'
@@ -185,6 +200,7 @@ function getDummyPosts(): Post[] {
       date: new Date().toISOString(),
       author: 1,
       slug: "local-wordpress-not-connected",
+      source: "civil.ge",
       _embedded: {
         author: [{
           name: "System"

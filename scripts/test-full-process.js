@@ -165,10 +165,21 @@ async function crawlWebsite(url) {
 
     if (uniqueUrls.length === 0) {
       console.log('No articles found, returning test article for pipeline testing');
+      // Extract source from TARGET_WEBSITE
+      let source = '';
+      try {
+        const urlObj = new URL(TARGET_WEBSITE);
+        source = urlObj.hostname.replace('www.', '');
+      } catch (error) {
+        console.error(`Error extracting source from TARGET_WEBSITE:`, error);
+        source = 'civil.ge'; // Default source
+      }
+
       return [{
         title: "Test Article from " + url,
         url: url,
-        publishedDate: new Date().toISOString()
+        publishedDate: new Date().toISOString(),
+        source: source
       }];
     }
 
@@ -201,10 +212,21 @@ async function crawlWebsite(url) {
         console.log(`Title: ${title}`);
 
         if (title) {
+          // Use the TARGET_WEBSITE for the source
+          let source = '';
+          try {
+            const urlObj = new URL(TARGET_WEBSITE);
+            source = urlObj.hostname.replace('www.', '');
+          } catch (error) {
+            console.error(`Error extracting source from TARGET_WEBSITE:`, error);
+            source = 'civil.ge'; // Default source
+          }
+
           articles.push({
             title,
             url: articleUrl,
-            publishedDate: new Date().toISOString()
+            publishedDate: new Date().toISOString(),
+            source: source
           });
           console.log(`Added article: ${title}`);
         }
@@ -224,14 +246,26 @@ async function crawlWebsite(url) {
     return [{
       title: "Test Article from " + url,
       url: url,
-      publishedDate: new Date().toISOString()
+      publishedDate: new Date().toISOString(),
+      source: 'civil.ge'
     }];
   } catch (error) {
     console.error('Error crawling website:', error);
+    // Extract source from TARGET_WEBSITE
+    let source = '';
+    try {
+      const urlObj = new URL(TARGET_WEBSITE);
+      source = urlObj.hostname.replace('www.', '');
+    } catch (error) {
+      console.error(`Error extracting source from TARGET_WEBSITE:`, error);
+      source = 'civil.ge'; // Default source
+    }
+
     return [{
       title: "Test Article from " + url,
       url: url,
-      publishedDate: new Date().toISOString()
+      publishedDate: new Date().toISOString(),
+      source: source
     }];
   }
 }
@@ -270,10 +304,21 @@ async function crawlAlternative(url) {
           !href.includes('/author/') &&
           !articles.some(a => a.url === href)) {
 
+        // Use the TARGET_WEBSITE for the source
+        let source = '';
+        try {
+          const urlObj = new URL(TARGET_WEBSITE);
+          source = urlObj.hostname.replace('www.', '');
+        } catch (error) {
+          console.error(`Error extracting source from TARGET_WEBSITE:`, error);
+          source = 'civil.ge'; // Default source
+        }
+
         articles.push({
           title,
           url: href,
-          publishedDate: new Date().toISOString()
+          publishedDate: new Date().toISOString(),
+          source: source
         });
       }
     });
@@ -457,7 +502,7 @@ async function rewriteArticle(article) {
         messages: [
           {
             role: 'system',
-            content: 'あなたは「ジョージア🇬🇪ニュース」のための翻訳者です。ジョージア語の記事を日本語に翻訳し、日本人読者向けに最適化します。以下のガイドラインに従ってください：\n\n1. 提供されたSEOタイトルを使用する\n2. 日本語として自然で読みやすい文章にする\n3. 適切な見出し構造を使用し、H2とH3タグでサブトピックを整理する\n4. 重要な用語には<strong>などのセマンティックHTMLを使用する\n5. エクスクラメーションマーク！が含まれている場合は、！を使わないでください。短い段落で読みやすく魅力的なコンテンツを作成する\n6. 強力な導入部と結論を含める\n7. ジョージアの地名や人名は初出時にカタカナと原語（ラテン文字）の両方を記載する\n8. 日本人読者にとって馴染みのない概念や文化的背景には簡潔な説明を加える\n\n重要な書式ルール：\n\n1. 応答は最初の行にSEOタイトルから始め、空白行を挟んでから本文を続ける\n2. 適切な構造と強調のために<h2>、<h3>、<strong>、<em>などのHTMLタグを使用する\n3. 以下のセクションは出力に含めないでください：\n   - 「トピック」や「人気記事」セクション\n   - 「関連記事」や「もっと読む」セクション\n   - 「著者について」セクション\n   - 著者の経歴やサイン\n   - 「AI編集者」のサイン\n   - コンテンツの冒頭にある「投稿：」マーカー\n   - サブスクリプション情報セクション\n   - 「メールを送信することにより」という免責事項\n   - ニュースレター登録フォーム\n   - プロモーションテキスト\n   - プライバシー通知の言及\n4. 記事の本文の冒頭でタイトルを繰り返さない\n5. 最後に他の記事へのリンクを含めない\n6. 主要な記事内容のみに焦点を当てる\n7. 出力に「投稿：」という単語を含めない\n8. ニュースレターの購読に関するテキストを含めない\n9. ジョージアと日本の関係に関連する側面がある場合は強調する'
+            content: 'あなたは「ジョージア🇬🇪ニュース」のための翻訳者です。ジョージア語の記事を日本語に翻訳し、日本人読者向けに最適化します。以下のガイドラインに従ってください：\n\n1. 提供されたSEOタイトルを使用する\n2. 日本語として自然で読みやすい文章にする\n3. 適切な見出し構造を使用し、H2とH3タグでサブトピックを整理する\n4. 重要な用語には<strong>などのセマンティックHTMLを使用する\n5. エクスクラメーションマーク！が含まれている場合は、！を使わないでください。短い段落で読みやすく魅力的なコンテンツを作成する\n6. 強力な導入部と結論を含める\n7. ジョージアの地名や人名は初出時にカタカナと原語（ラテン文字）の両方を記載する\n8. 日本人読者にとって馴染みのない概念や文化的背景には簡潔な説明を加える\n\n重要な書式ルール：\n\n1. 応答は最初の行にSEOタイトルから始め、空白行を挟んでから本文を続ける\n2. 適切な構造と強調のために<h2>、<h3>、<strong>、<em>などのHTMLタグを使用する\n3. 以下のセクションは出力に含めないでください：\n   - 「トピック」や「人気記事」セクション\n   - 「関連記事」や「もっと読む」セクション\n   - 「著者について」セクション\n   - 著者の経歴やサイン\n   - 「AI編集者」のサイン\n   - コンテンツの冒頭にある「投稿：」マーカー\n   - サブスクリプション情報セクション\n   - 「メールを送信することにより」という免責事項\n   - ニュースレター登録フォーム\n   - プロモーションテキスト\n   - プライバシー通知の言及\n4. 記事の本文の冒頭でタイトルを繰り返さない\n5. 最後に他の記事へのリンクを含めない\n6. 主要な記事内容のみに焦点を当てる\n7. 出力に「投稿：」という単語を含めない\n8. ニュースレターの購読に関するテキストを含めない\n9. 外貨を換算する際は、最新のレートで行う。現大統領と元大統領の区別をきちんとするように。ジョージアと日本の関係に関連する側面がある場合は強調する'
           },
           {
             role: 'user',
@@ -531,16 +576,18 @@ async function postToWordPress(article, rewrittenArticle) {
   }
 
   // Check if rewrittenArticle is an object with title and content properties
-  let title, content, metaTitle, metaDescription;
+  let title, content, metaTitle, metaDescription, source;
   if (typeof rewrittenArticle === 'object' && rewrittenArticle.title && rewrittenArticle.content) {
     title = rewrittenArticle.title;
     content = rewrittenArticle.content;
     metaTitle = rewrittenArticle.metaTitle;
     metaDescription = rewrittenArticle.metaDescription;
+    source = article.source || 'civil.ge'; // Get source from the original article
   } else {
     // For backward compatibility
     title = article.title;
     content = rewrittenArticle; // Assuming rewrittenArticle is the content string
+    source = article.source || 'civil.ge'; // Get source from the original article
   }
 
   console.log(`Posting article to WordPress: ${title}`);
@@ -684,7 +731,8 @@ async function postToWordPress(article, rewrittenArticle) {
         author: 1, // Use the user ID of the WordPress account (usually 1 for the primary admin)
         meta: {
           _yoast_wpseo_title: metaTitle || title,
-          _yoast_wpseo_metadesc: metaDescription || contentText.substring(0, 155) + '...'
+          _yoast_wpseo_metadesc: metaDescription || contentText.substring(0, 155) + '...',
+          source: source // Add source information to meta
         }
       })
     });
