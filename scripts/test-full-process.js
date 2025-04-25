@@ -17,7 +17,9 @@ const WP_CLIENT_ID = process.env.WORDPRESS_CLIENT_ID;
 const WP_CLIENT_SECRET = process.env.WORDPRESS_CLIENT_SECRET;
 const WP_USERNAME = process.env.WORDPRESS_USERNAME;
 const WP_PASSWORD = process.env.WORDPRESS_PASSWORD;
-const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka';
+// Parse comma-separated list of target websites
+const TARGET_WEBSITES = (process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka').split(',').map(url => url.trim());
+const DEFAULT_TARGET_WEBSITE = TARGET_WEBSITES[0];
 
 // Function to check if an article was published within the last 24 hours
 function isPublishedWithin24Hours(dateString) {
@@ -129,6 +131,16 @@ async function testWordPressConnection() {
 async function crawlWebsite(url) {
   console.log(`Crawling website: ${url}`);
   try {
+    // Extract the source domain from the URL
+    let source = '';
+    try {
+      const urlObj = new URL(url);
+      source = urlObj.hostname.replace('www.', '');
+    } catch (error) {
+      console.error(`Error extracting source from URL ${url}:`, error);
+      source = 'civil.ge'; // Default source
+    }
+
     // Use a direct HTTP request with appropriate headers
     const response = await fetch(url, {
       headers: {
@@ -151,13 +163,51 @@ async function crawlWebsite(url) {
     const $ = cheerio.load(html);
     const articleUrls = [];
 
-    // Look for article links with the specific pattern for civil.ge
-    $('a').each((i, element) => {
-      const href = $(element).attr('href');
-      if (href && href.includes('civil.ge/ka/archives/') && !href.includes('/category/') && !href.includes('/author/')) {
-        articleUrls.push(href);
-      }
-    });
+    // Determine which website we're crawling and use appropriate selectors
+    if (url.includes('civil.ge')) {
+      // Look for article links with the specific pattern for civil.ge
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href && href.includes('civil.ge/ka/archives/') && !href.includes('/category/') && !href.includes('/author/')) {
+          articleUrls.push(href);
+        }
+      });
+    } else if (url.includes('interpressnews.ge')) {
+      // Look for article links with the specific pattern for interpressnews.ge
+      // The article links are in a specific format with titles as text content
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
+
+        // Check if this is an article link (contains /ka/article/ in the path)
+        if (href &&
+            (href.includes('/ka/article/') ||
+             href.startsWith('/ka/article/')) &&
+            title &&
+            title.length > 10 &&
+            !href.includes('/category/')) {
+
+          // Make sure the URL is absolute
+          const fullUrl = href.startsWith('http') ? href : `https://www.interpressnews.ge${href.startsWith('/') ? '' : '/'}${href}`;
+
+          // Store both the URL and title
+          articleUrls.push(fullUrl);
+
+          // Log for debugging
+          console.log(`Found interpressnews.ge article: ${title} - ${fullUrl}`);
+        }
+      });
+    } else {
+      // Generic approach for other websites
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href && href.includes(source) && !href.includes('/category/') && !href.includes('/author/')) {
+          // Make sure the URL is absolute
+          const fullUrl = href.startsWith('http') ? href : `https://${source}${href.startsWith('/') ? '' : '/'}${href}`;
+          articleUrls.push(fullUrl);
+        }
+      });
+    }
 
     // Remove duplicates
     const uniqueUrls = [...new Set(articleUrls)];
@@ -165,16 +215,6 @@ async function crawlWebsite(url) {
 
     if (uniqueUrls.length === 0) {
       console.log('No articles found, returning test article for pipeline testing');
-      // Extract source from TARGET_WEBSITE
-      let source = '';
-      try {
-        const urlObj = new URL(TARGET_WEBSITE);
-        source = urlObj.hostname.replace('www.', '');
-      } catch (error) {
-        console.error(`Error extracting source from TARGET_WEBSITE:`, error);
-        source = 'civil.ge'; // Default source
-      }
-
       return [{
         title: "Test Article from " + url,
         url: url,
@@ -207,28 +247,71 @@ async function crawlWebsite(url) {
         const articleHtml = await articleResponse.text();
         const $article = cheerio.load(articleHtml);
 
-        // Extract title
-        const title = $article('h1').first().text().trim();
+        // Extract title - different websites might have different selectors
+        let title = '';
+
+        // Try different approaches for title extraction based on the website
+        if (articleUrl.includes('interpressnews.ge')) {
+          // For interpressnews.ge, the title is in a specific format
+
+          // First try to get the title from the page's h1
+          const h1Title = $article('h1').first().text().trim();
+          if (h1Title && h1Title.length > 10) {
+            title = h1Title;
+          } else {
+            // Try to get it from the meta title
+            const metaTitle = $article('meta[property="og:title"]').attr('content') ||
+                             $article('title').text().trim();
+            if (metaTitle && metaTitle.length > 10) {
+              title = metaTitle;
+            } else {
+              // Try to find the link that matches the current URL pattern
+              $article('a').each((_, element) => {
+                const href = $article(element).attr('href');
+                if (href &&
+                    (href.includes('/ka/article/') || articleUrl.includes(href)) &&
+                    !href.includes('/category/')) {
+                  const linkText = $article(element).text().trim();
+                  if (linkText && linkText.length > 10) {
+                    title = linkText;
+                    return false; // Break the loop
+                  }
+                }
+              });
+            }
+          }
+        } else {
+          // Default title extraction for other websites
+          const titleSelectors = ['h1', '.article-title', '.entry-title', '.post-title', '.title'];
+          for (const selector of titleSelectors) {
+            const titleElement = $article(selector).first();
+            if (titleElement.length > 0) {
+              title = titleElement.text().trim();
+              break;
+            }
+          }
+        }
+
         console.log(`Title: ${title}`);
 
         if (title) {
-          // Use the TARGET_WEBSITE for the source
-          let source = '';
+          // Extract the source from the article URL, not the website URL
+          let articleSource = '';
           try {
-            const urlObj = new URL(TARGET_WEBSITE);
-            source = urlObj.hostname.replace('www.', '');
+            const articleUrlObj = new URL(articleUrl);
+            articleSource = articleUrlObj.hostname.replace('www.', '');
           } catch (error) {
-            console.error(`Error extracting source from TARGET_WEBSITE:`, error);
-            source = 'civil.ge'; // Default source
+            console.error(`Error extracting source from article URL ${articleUrl}:`, error);
+            articleSource = source; // Fallback to the website source
           }
 
           articles.push({
             title,
             url: articleUrl,
             publishedDate: new Date().toISOString(),
-            source: source
+            source: articleSource
           });
-          console.log(`Added article: ${title}`);
+          console.log(`Added article: ${title} (Source: ${articleSource})`);
         }
       } catch (error) {
         console.error(`Error getting title for ${articleUrl}:`, error);
@@ -247,17 +330,18 @@ async function crawlWebsite(url) {
       title: "Test Article from " + url,
       url: url,
       publishedDate: new Date().toISOString(),
-      source: 'civil.ge'
+      source: source
     }];
   } catch (error) {
     console.error('Error crawling website:', error);
-    // Extract source from TARGET_WEBSITE
+
+    // Extract the source domain from the URL
     let source = '';
     try {
-      const urlObj = new URL(TARGET_WEBSITE);
+      const urlObj = new URL(url);
       source = urlObj.hostname.replace('www.', '');
     } catch (error) {
-      console.error(`Error extracting source from TARGET_WEBSITE:`, error);
+      console.error(`Error extracting source from URL ${url}:`, error);
       source = 'civil.ge'; // Default source
     }
 
@@ -274,6 +358,17 @@ async function crawlWebsite(url) {
 async function crawlAlternative(url) {
   try {
     console.log('Using alternative crawling approach...');
+
+    // Extract the source domain from the URL
+    let source = '';
+    try {
+      const urlObj = new URL(url);
+      source = urlObj.hostname.replace('www.', '');
+    } catch (error) {
+      console.error(`Error extracting source from URL ${url}:`, error);
+      source = 'civil.ge'; // Default source
+    }
+
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -291,37 +386,114 @@ async function crawlAlternative(url) {
     const $ = cheerio.load(html);
     const articles = [];
 
-    // Look for all links
-    $('a').each((i, element) => {
-      const href = $(element).attr('href');
-      const title = $(element).text().trim();
+    // Determine which website we're crawling and use appropriate selectors
+    if (url.includes('civil.ge')) {
+      // Look for all links with civil.ge pattern
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
 
-      if (href &&
-          href.includes('civil.ge/ka/archives/') &&
-          title &&
-          title.length > 5 &&
-          !href.includes('/category/') &&
-          !href.includes('/author/') &&
-          !articles.some(a => a.url === href)) {
+        if (href &&
+            href.includes('civil.ge/ka/archives/') &&
+            title &&
+            title.length > 5 &&
+            !href.includes('/category/') &&
+            !href.includes('/author/') &&
+            !articles.some(a => a.url === href)) {
 
-        // Use the TARGET_WEBSITE for the source
-        let source = '';
-        try {
-          const urlObj = new URL(TARGET_WEBSITE);
-          source = urlObj.hostname.replace('www.', '');
-        } catch (error) {
-          console.error(`Error extracting source from TARGET_WEBSITE:`, error);
-          source = 'civil.ge'; // Default source
+          // Extract the source from the article URL
+          let articleSource = '';
+          try {
+            const articleUrlObj = new URL(href);
+            articleSource = articleUrlObj.hostname.replace('www.', '');
+          } catch (error) {
+            console.error(`Error extracting source from article URL ${href}:`, error);
+            articleSource = source; // Fallback to the website source
+          }
+
+          articles.push({
+            title,
+            url: href,
+            publishedDate: new Date().toISOString(),
+            source: articleSource
+          });
         }
+      });
+    } else if (url.includes('interpressnews.ge')) {
+      // Look for all links with interpressnews.ge pattern
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
 
-        articles.push({
-          title,
-          url: href,
-          publishedDate: new Date().toISOString(),
-          source: source
-        });
-      }
-    });
+        if (href &&
+            (href.includes('interpressnews.ge/ka/article/') || href.startsWith('/ka/article/')) &&
+            title &&
+            title.length > 5 &&
+            !href.includes('/category/') &&
+            !href.includes('/author/') &&
+            !articles.some(a => a.url === href)) {
+
+          // Make sure the URL is absolute
+          const fullUrl = href.startsWith('http') ? href : `https://www.interpressnews.ge${href.startsWith('/') ? '' : '/'}${href}`;
+
+          // Extract the source from the article URL
+          let articleSource = '';
+          try {
+            const articleUrlObj = new URL(fullUrl);
+            articleSource = articleUrlObj.hostname.replace('www.', '');
+          } catch (error) {
+            console.error(`Error extracting source from article URL ${fullUrl}:`, error);
+            articleSource = source; // Fallback to the website source
+          }
+
+          articles.push({
+            title,
+            url: fullUrl,
+            publishedDate: new Date().toISOString(),
+            source: articleSource
+          });
+        }
+      });
+    } else {
+      // Generic approach for other websites
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
+
+        if (href &&
+            title &&
+            title.length > 5 &&
+            !href.includes('/category/') &&
+            !href.includes('/author/') &&
+            !articles.some(a => a.url === href)) {
+
+          // Make sure the URL is absolute
+          let fullUrl = href;
+          if (!href.startsWith('http')) {
+            fullUrl = href.startsWith('/')
+              ? `https://${source}${href}`
+              : `https://${source}/${href}`;
+          }
+
+          // Extract the source from the article URL
+          let articleSource = '';
+          try {
+            const articleUrlObj = new URL(fullUrl);
+            articleSource = articleUrlObj.hostname.replace('www.', '');
+          } catch (error) {
+            console.error(`Error extracting source from article URL ${fullUrl}:`, error);
+            articleSource = source; // Fallback to the website source
+          }
+
+          articles.push({
+            title,
+            url: fullUrl,
+            publishedDate: new Date().toISOString(),
+            source: articleSource
+          });
+        }
+      });
+    }
 
     console.log(`Found ${articles.length} articles with alternative approach`);
     return articles.slice(0, 5);
@@ -335,6 +507,10 @@ async function crawlAlternative(url) {
 async function crawlArticleContent(url) {
   console.log(`Crawling article content: ${url}`);
   try {
+    // Determine which website we're crawling
+    const isInterpressnews = url.includes('interpressnews.ge');
+    const isCivilGe = url.includes('civil.ge');
+
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -354,15 +530,50 @@ async function crawlArticleContent(url) {
 
     // Extract content with site-specific selectors
     let content = '';
-    const selectors = [
-      '.entry-content',
-      '.post-content',
-      '.content',
-      'article .content',
-      '.article-body',
-      '.article-text',
-      'article'
-    ];
+
+    // Use different selectors based on the website
+    let selectors = [];
+
+    if (isInterpressnews) {
+      // For interpressnews.ge, the article content is directly in the body after the title and date
+      // The content is not wrapped in a specific container, so we need to be more specific
+      selectors = [
+        // Try to get the main content area
+        'body > div > div > div',
+        // Fallback selectors
+        'body > div',
+        '.article-text',
+        '.article-body',
+        '.news-text',
+        '.news-body',
+        '.content-text',
+        '.article-content',
+        '#article-body'
+      ];
+    } else if (isCivilGe) {
+      selectors = [
+        '.entry-content',
+        '.post-content',
+        '.content',
+        'article .content'
+      ];
+    } else {
+      // Generic selectors for other websites
+      selectors = [
+        '.entry-content',
+        '.post-content',
+        '.content',
+        'article .content',
+        '.article-body',
+        '.article-text',
+        'article',
+        '.news-text',
+        '.news-body',
+        '.content-text',
+        '.article-content',
+        '#article-body'
+      ];
+    }
 
     for (const selector of selectors) {
       if ($(selector).length > 0) {
@@ -373,22 +584,77 @@ async function crawlArticleContent(url) {
 
     // Fallback: try to find paragraphs within the main content area
     if (!content) {
-      const paragraphs = $('article p, main p, .content p');
-      if (paragraphs.length > 0) {
-        content = paragraphs.map((i, el) => $.html(el)).get().join('');
+      if (isInterpressnews) {
+        // For interpressnews.ge, try to extract paragraphs directly after the title
+        // The content is usually in the first few paragraphs after the date
+        const paragraphs = [];
+
+        // Look for text nodes that might be the article content
+        $('body').find('*').contents().each((_, node) => {
+          if (node.type === 'text' && node.data.trim().length > 20) {
+            // This might be a paragraph of content
+            paragraphs.push(`<p>${node.data.trim()}</p>`);
+          }
+        });
+
+        // Also try to find actual paragraph elements
+        $('p').each((_, el) => {
+          const text = $(el).text().trim();
+          if (text.length > 20) {
+            paragraphs.push($.html(el));
+          }
+        });
+
+        if (paragraphs.length > 0) {
+          content = paragraphs.join('');
+        }
+      } else {
+        // Generic approach for other websites
+        const paragraphs = $('article p, main p, .content p, .article-text p, .news-text p');
+        if (paragraphs.length > 0) {
+          content = paragraphs.map((_, el) => $.html(el)).get().join('');
+        }
       }
     }
 
     // Extract the publication date
     let publishDate = null;
-    const dateSelectors = [
-      'time',
-      '.article__date',
-      '.article-date',
-      '.post-date',
-      '[datetime]',
-      '.byline time'
-    ];
+
+    // Use different date selectors based on the website
+    let dateSelectors = [];
+
+    if (isInterpressnews) {
+      dateSelectors = [
+        '.article-date',
+        '.news-date',
+        '.date',
+        'time',
+        '.article-info time',
+        '.article-time'
+      ];
+    } else if (isCivilGe) {
+      dateSelectors = [
+        'time',
+        '.article__date',
+        '.article-date',
+        '.post-date',
+        '[datetime]'
+      ];
+    } else {
+      // Generic date selectors for other websites
+      dateSelectors = [
+        'time',
+        '.article__date',
+        '.article-date',
+        '.post-date',
+        '[datetime]',
+        '.byline time',
+        '.date',
+        '.news-date',
+        '.article-info time',
+        '.article-time'
+      ];
+    }
 
     for (const selector of dateSelectors) {
       if ($(selector).length > 0) {
@@ -502,7 +768,7 @@ async function rewriteArticle(article) {
         messages: [
           {
             role: 'system',
-            content: 'あなたは「ジョージア🇬🇪ニュース」のための翻訳者です。ジョージア語の記事を日本語に翻訳し、日本人読者向けに最適化します。以下のガイドラインに従ってください：\n\n1. 提供されたSEOタイトルを使用する\n2. 日本語として自然で読みやすい文章にする\n3. 適切な見出し構造を使用し、H2とH3タグでサブトピックを整理する\n4. 重要な用語には<strong>などのセマンティックHTMLを使用する\n5. エクスクラメーションマーク！が含まれている場合は、！を使わないでください。短い段落で読みやすく魅力的なコンテンツを作成する\n6. 強力な導入部と結論を含める\n7. ジョージアの地名や人名は初出時にカタカナと原語（ラテン文字）の両方を記載する\n8. 日本人読者にとって馴染みのない概念や文化的背景には簡潔な説明を加える\n\n重要な書式ルール：\n\n1. 応答は最初の行にSEOタイトルから始め、空白行を挟んでから本文を続ける\n2. 適切な構造と強調のために<h2>、<h3>、<strong>、<em>などのHTMLタグを使用する\n3. 以下のセクションは出力に含めないでください：\n   - 「トピック」や「人気記事」セクション\n   - 「関連記事」や「もっと読む」セクション\n   - 「著者について」セクション\n   - 著者の経歴やサイン\n   - 「AI編集者」のサイン\n   - コンテンツの冒頭にある「投稿：」マーカー\n   - サブスクリプション情報セクション\n   - 「メールを送信することにより」という免責事項\n   - ニュースレター登録フォーム\n   - プロモーションテキスト\n   - プライバシー通知の言及\n4. 記事の本文の冒頭でタイトルを繰り返さない\n5. 最後に他の記事へのリンクを含めない\n6. 主要な記事内容のみに焦点を当てる\n7. 出力に「投稿：」という単語を含めない\n8. ニュースレターの購読に関するテキストを含めない\n9. 外貨を換算する際は、最新のレートで行う。現大統領と元大統領の区別をきちんとするように。ジョージアと日本の関係に関連する側面がある場合は強調する'
+            content: 'あなたは「ジョージア🇬🇪ニュース」のための翻訳者です。ジョージア語の記事を日本語に翻訳し、日本人読者向けに最適化します。以下のガイドラインに従ってください：\n\n1. 提供されたSEOタイトルを使用する\n2. 日本語として自然で読みやすい文章にする\n3. 適切な見出し構造を使用し、H2とH3タグでサブトピックを整理する\n4. 重要な用語には<strong>などのセマンティックHTMLを使用する\n5. エクスクラメーションマーク！が含まれている場合は、！を使わないでください。短い段落で読みやすく魅力的なコンテンツを作成する\n6. 強力な導入部と結論を含める\n7. ジョージアの地名や人名は初出時にカタカナと原語（ラテン文字）の両方を記載する\n8. 日本人読者にとって馴染みのない概念や文化的背景には簡潔な説明を加える\n\n重要な書式ルール：\n\n1. 応答は最初の行にSEOタイトルから始め、空白行を挟んでから本文を続ける\n2. 適切な構造と強調のために<h2>、<h3>、<strong>、<em>などのHTMLタグを使用する\n3. 以下のセクションは出力に含めないでください：\n   - 「トピック」や「人気記事」セクション\n   - 「関連記事」や「もっと読む」セクション\n   - 「著者について」セクション\n   - 著者の経歴やサイン\n   - 「AI編集者」のサイン\n   - コンテンツの冒頭にある「投稿：」マーカー\n   - サブスクリプション情報セクション\n   - 「メールを送信することにより」という免責事項\n   - ニュースレター登録フォーム\n   - プロモーションテキスト\n   - プライバシー通知の言及\n4. 記事の本文の冒頭でタイトルを繰り返さない\n5. 最後に他の記事へのリンクを含めない\n6. 主要な記事内容のみに焦点を当てる\n7. 出力に「投稿：」という単語を含めない\n8. ニュースレターの購読に関するテキストを含めない\n9. 外貨を換算する際は、最新のレート(現在1lari→52円）で行う。現大統領と元大統領の区別をきちんとするように。ジョージアと日本の関係に関連する側面がある場合は強調する'
           },
           {
             role: 'user',
@@ -729,10 +995,12 @@ async function postToWordPress(article, rewrittenArticle) {
         excerpt: excerpt, // Consistent excerpt for all articles
         status: 'publish',
         author: 1, // Use the user ID of the WordPress account (usually 1 for the primary admin)
+        // Custom fields need to be in the meta object
         meta: {
           _yoast_wpseo_title: metaTitle || title,
           _yoast_wpseo_metadesc: metaDescription || contentText.substring(0, 155) + '...',
-          source: source // Add source information to meta
+          source: source, // Add source information to meta
+          article_source: source // Add source as a custom field that can be displayed
         }
       })
     });
@@ -767,16 +1035,30 @@ async function main() {
     // return;
   }
 
-  // 1. Crawl website to find articles
-  let articles = await crawlWebsite(TARGET_WEBSITE);
+  // 1. Crawl all target websites to find articles
+  let allArticles = [];
 
-  if (articles.length === 0) {
-    console.log('No articles found with primary method, trying alternative approach...');
-    articles = await crawlAlternative(TARGET_WEBSITE);
+  for (const website of TARGET_WEBSITES) {
+    console.log(`\nCrawling website: ${website}`);
+
+    // Try primary crawling method
+    let websiteArticles = await crawlWebsite(website);
+
+    // If no articles found, try alternative approach
+    if (websiteArticles.length === 0) {
+      console.log(`No articles found on ${website} with primary method, trying alternative approach...`);
+      websiteArticles = await crawlAlternative(website);
+    }
+
+    console.log(`Found ${websiteArticles.length} articles from ${website}`);
+    allArticles = [...allArticles, ...websiteArticles];
   }
 
+  // Use the combined articles from all websites
+  let articles = allArticles;
+
   if (articles.length === 0) {
-    console.log('No articles found. Exiting.');
+    console.log('No articles found from any website. Exiting.');
     return;
   }
 

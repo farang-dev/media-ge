@@ -47,7 +47,7 @@ export async function fetchPosts(page: number = 1, perPage: number = 20): Promis
 
   try {
     const response = await fetch(
-      `${WP_API_URL}/posts?_embed=author&per_page=${perPage}&page=${page}`,
+      `${WP_API_URL}/posts?_embed=author&per_page=${perPage}&page=${page}&_fields=id,title,content,excerpt,link,date,author,slug,meta,_embedded`,
       {
         next: { revalidate: 10 }, // Revalidate every 10 seconds during development
         headers: {
@@ -91,7 +91,7 @@ export async function fetchPost(slug: string): Promise<Post | null> {
 
   try {
     // Construct the API URL
-    const apiUrl = `${WP_API_URL}/posts?slug=${encodeURIComponent(slug)}&_embed=author`;
+    const apiUrl = `${WP_API_URL}/posts?slug=${encodeURIComponent(slug)}&_embed=author&_fields=id,title,content,excerpt,link,date,author,slug,meta,_embedded`;
     console.log(`Making request to: ${apiUrl}`);
 
     const response = await fetch(
@@ -145,17 +145,25 @@ export async function fetchPost(slug: string): Promise<Post | null> {
 }
 
 function formatPost(post: any): Post {
-  // Use the TARGET_WEBSITE environment variable for the source
-  // Default to civil.ge if not available
-  const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka';
+  // Extract source from meta field if available
   let source = '';
-  try {
-    const url = new URL(TARGET_WEBSITE);
-    source = url.hostname.replace('www.', '');
-  } catch (error) {
-    console.error('Error extracting source from TARGET_WEBSITE:', error);
-    // Default to civil.ge if we can't extract the domain
-    source = 'civil.ge';
+  if (post.meta && post.meta.article_source) {
+    // First try to get the source from the article_source field
+    source = post.meta.article_source;
+  } else if (post.meta && post.meta.source) {
+    // Fallback to the source field
+    source = post.meta.source;
+  } else {
+    // Fallback to TARGET_WEBSITE environment variable
+    const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka';
+    try {
+      const url = new URL(TARGET_WEBSITE);
+      source = url.hostname.replace('www.', '');
+    } catch (error) {
+      console.error('Error extracting source from TARGET_WEBSITE:', error);
+      // Default to civil.ge if we can't extract the domain
+      source = 'civil.ge';
+    }
   }
 
   return {
@@ -219,7 +227,7 @@ export async function fetchRelatedPosts(currentPostId: number, count: number = 3
   try {
     // Fetch recent posts excluding the current one
     const response = await fetch(
-      `${WP_API_URL}/posts?_embed=author&per_page=${count + 1}&exclude=${currentPostId}`,
+      `${WP_API_URL}/posts?_embed=author&per_page=${count + 1}&exclude=${currentPostId}&_fields=id,title,content,excerpt,link,date,author,slug,meta,_embedded`,
       {
         next: { revalidate: 10 },
         headers: {
