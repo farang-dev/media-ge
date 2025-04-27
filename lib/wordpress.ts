@@ -19,6 +19,8 @@ export interface Post {
     yoast_description?: string;
     _yoast_wpseo_title?: string;
     _yoast_wpseo_metadesc?: string;
+    source?: string;
+    article_source?: string;
   };
   _embedded?: {
     author?: Array<{
@@ -147,13 +149,50 @@ export async function fetchPost(slug: string): Promise<Post | null> {
 function formatPost(post: any): Post {
   // Extract source from meta field if available
   let source = '';
-  if (post.meta && post.meta.article_source) {
-    // First try to get the source from the article_source field
-    source = post.meta.article_source;
-  } else if (post.meta && post.meta.source) {
-    // Fallback to the source field
-    source = post.meta.source;
-  } else {
+
+  // First, check if the content contains a source indicator
+  if (post.content && post.content.rendered) {
+    const content = post.content.rendered;
+
+    // Check for specific patterns in the content
+    if (content.includes('interpressnews.ge')) {
+      source = 'interpressnews.ge';
+    } else if (content.includes('メディアソース: interpressnews.ge')) {
+      source = 'interpressnews.ge';
+    } else if (content.includes('civil.ge')) {
+      source = 'civil.ge';
+    } else if (content.includes('メディアソース: civil.ge')) {
+      source = 'civil.ge';
+    }
+  }
+
+  // If no source found in content, try meta fields
+  if (!source && post.meta) {
+    if (post.meta.article_source) {
+      source = post.meta.article_source;
+    } else if (post.meta.source) {
+      source = post.meta.source;
+    }
+  }
+
+  // If still no source, try to extract from the link
+  if (!source && post.link) {
+    try {
+      const url = new URL(post.link);
+      if (url.hostname.includes('interpressnews.ge')) {
+        source = 'interpressnews.ge';
+      } else if (url.hostname.includes('civil.ge')) {
+        source = 'civil.ge';
+      } else {
+        source = url.hostname.replace('www.', '');
+      }
+    } catch (error) {
+      console.error('Error extracting source from link:', error);
+    }
+  }
+
+  // Last resort fallback
+  if (!source) {
     // Fallback to TARGET_WEBSITE environment variable
     const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka';
     try {

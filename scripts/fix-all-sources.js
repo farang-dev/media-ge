@@ -1,11 +1,5 @@
-// Use the same approach as in test-full-process.js
-const dotenv = require('dotenv');
+require('dotenv').config();
 const axios = require('axios');
-const cheerio = require('cheerio');
-const { URL } = require('url');
-
-// Load environment variables
-dotenv.config();
 
 // WordPress API credentials
 const WP_API_URL = process.env.WORDPRESS_API_URL;
@@ -47,7 +41,7 @@ async function getAccessToken() {
 async function fetchAllPosts(accessToken) {
   console.log('Fetching all posts...');
   try {
-    const response = await axios.get(`${WP_API_URL}/posts?per_page=100`, {
+    const response = await axios.get(`${WP_API_URL}/posts?per_page=100&_fields=id,title,content,excerpt,link,date,meta`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Accept': 'application/json'
@@ -66,72 +60,50 @@ async function fetchAllPosts(accessToken) {
   }
 }
 
-// Function to extract source from URL
-function extractSourceFromUrl(url) {
-  try {
-    const urlObj = new URL(url);
-    return urlObj.hostname.replace('www.', '');
-  } catch (error) {
-    console.error(`Error extracting source from URL ${url}:`, error);
-    return 'civil.ge'; // Default fallback
-  }
-}
-
-// Function to extract source from content
-function extractSourceFromContent(content) {
-  // Check for specific article URLs in the content
-  if (content.includes('interpressnews.ge/ka/article/836607') ||
-      content.includes('interpressnews.ge/ka/article/836580') ||
-      content.includes('interpressnews.ge/ka/article/836542')) {
-    return 'interpressnews.ge';
-  }
-
-  // Look for URLs in the content that match interpressnews.ge
+// Function to determine the correct source from content
+function determineCorrectSource(content) {
+  // Check for specific patterns in the content
   if (content.includes('interpressnews.ge')) {
     return 'interpressnews.ge';
-  }
-
-  // Look for URLs in the content that match civil.ge
-  if (content.includes('civil.ge')) {
+  } else if (content.includes('civil.ge')) {
+    return 'civil.ge';
+  } else if (content.includes('police.ge')) {
+    return 'police.ge';
+  } else if (content.includes('facebook.com')) {
+    return 'facebook.com';
+  } else {
+    // Default to civil.ge if no specific source is found
     return 'civil.ge';
   }
-
-  // Look for patterns like "メディアソース: civil.ge" in the content
-  const sourceMatch = content.match(/メディアソース:\s*([a-zA-Z0-9.-]+)/);
-  if (sourceMatch && sourceMatch[1]) {
-    return sourceMatch[1];
-  }
-
-  // Look for URLs in the content
-  const urlMatch = content.match(/https?:\/\/([^\/]+)/);
-  if (urlMatch && urlMatch[1]) {
-    return urlMatch[1].replace('www.', '');
-  }
-
-  // Default to civil.ge if no source is found
-  return 'civil.ge';
 }
 
-// Function to update a post's meta fields
-async function updatePostSource(accessToken, postId, post) {
-  // Try to extract source from content
-  let source = 'civil.ge'; // Default source
-
-  if (post.content && post.content.rendered) {
-    // Extract from the content
-    source = extractSourceFromContent(post.content.rendered);
-  } else if (post.link) {
-    // Fallback to extracting from the link
-    source = extractSourceFromUrl(post.link);
+// Function to update a post's source
+async function updatePostSource(accessToken, postId, content, currentSource, correctSource) {
+  // If the source is already correct, skip the update
+  if (currentSource === correctSource) {
+    console.log(`Post ${postId} already has correct source: ${correctSource}`);
+    return true;
   }
 
-  console.log(`Updating post ${postId} with source: ${source}`);
+  console.log(`Updating post ${postId} from source ${currentSource} to ${correctSource}`);
 
   try {
+    // Check if the content already has a source line
+    let updatedContent = content;
+    if (content.includes('メディアソース:')) {
+      console.log('Content already has a source line, updating it');
+      updatedContent = content.replace(/メディアソース:.*?<\/p>/g, `メディアソース: ${correctSource}</p>`);
+    } else {
+      console.log('Adding source line to content');
+      updatedContent = content + `\n\n<p><small>メディアソース: ${correctSource}</small></p>`;
+    }
+
+    // Update the post
     const response = await axios.post(`${WP_API_URL}/posts/${postId}`, {
+      content: updatedContent,
       meta: {
-        source: source,
-        article_source: source
+        source: correctSource,
+        article_source: correctSource
       }
     }, {
       headers: {
@@ -155,43 +127,65 @@ async function updatePostSource(accessToken, postId, post) {
 // Main function
 async function main() {
   try {
-    console.log('Starting update of article sources...');
-
+    console.log('Starting source check and fix...');
+    
     // Get access token
     const accessToken = await getAccessToken();
-
+    
     // Fetch all posts
     const posts = await fetchAllPosts(accessToken);
-
-    // Update each post
-    let successCount = 0;
-    let failCount = 0;
-
+    
+    // Check and update each post
+    let correctCount = 0;
+    let updatedCount = 0;
+    let failedCount = 0;
+    
     for (const post of posts) {
       try {
-        // Pass the entire post object to updatePostSource
-        const success = await updatePostSource(accessToken, post.id, post);
-
-        if (success) {
-          successCount++;
+        // Get the current source from meta
+        const currentSource = post.meta?.source || post.meta?.article_source || 'civil.ge';
+        
+        // Determine the correct source from content
+        const correctSource = determineCorrectSource(post.content.rendered);
+        
+        console.log(`\nPost ${post.id}: ${post.title.rendered}`);
+        console.log(`Current source: ${currentSource}`);
+        console.log(`Correct source: ${correctSource}`);
+        
+        // Update the post if needed
+        if (currentSource !== correctSource) {
+          const success = await updatePostSource(
+            accessToken, 
+            post.id, 
+            post.content.rendered, 
+            currentSource, 
+            correctSource
+          );
+          
+          if (success) {
+            updatedCount++;
+          } else {
+            failedCount++;
+          }
         } else {
-          failCount++;
+          correctCount++;
         }
-
+        
         // Add a small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         console.error(`Error processing post ${post.id}:`, error);
-        failCount++;
+        failedCount++;
       }
     }
-
-    console.log('\n=== UPDATE SUMMARY ===');
+    
+    console.log('\n=== SOURCE FIX SUMMARY ===');
     console.log(`Total posts processed: ${posts.length}`);
-    console.log(`Successfully updated: ${successCount}`);
-    console.log(`Failed to update: ${failCount}`);
-    console.log('======================');
-
+    console.log(`Already correct: ${correctCount}`);
+    console.log(`Successfully updated: ${updatedCount}`);
+    console.log(`Failed to update: ${failedCount}`);
+    console.log('=========================');
+    
   } catch (error) {
     console.error('Error in main process:', error);
   }

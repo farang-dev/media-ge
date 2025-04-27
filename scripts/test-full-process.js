@@ -21,8 +21,8 @@ const WP_PASSWORD = process.env.WORDPRESS_PASSWORD;
 const TARGET_WEBSITES = (process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka').split(',').map(url => url.trim());
 const DEFAULT_TARGET_WEBSITE = TARGET_WEBSITES[0];
 
-// Function to check if an article was published within the last 24 hours
-function isPublishedWithin24Hours(dateString) {
+// Function to check if an article was published within the last 12 hours
+function isPublishedWithin12Hours(dateString) {
   if (!dateString) return false;
 
   // Try to parse the date string
@@ -41,7 +41,15 @@ function isPublishedWithin24Hours(dateString) {
           lowerCaseDate.includes('hours ago') ||
           lowerCaseDate.includes('minute ago') ||
           lowerCaseDate.includes('minutes ago')) {
-        return true;
+        // For "hours ago", check if it's within 12 hours
+        if (lowerCaseDate.includes('hours ago')) {
+          const hoursMatch = lowerCaseDate.match(/(\d+)\s+hours\s+ago/);
+          if (hoursMatch && hoursMatch[1]) {
+            const hours = parseInt(hoursMatch[1], 10);
+            return hours <= 12;
+          }
+        }
+        return true; // For "today", "minute(s) ago", and "hour ago" (singular)
       }
 
       // If we can't determine, default to false
@@ -52,10 +60,10 @@ function isPublishedWithin24Hours(dateString) {
     return false;
   }
 
-  // Check if the date is within the last 24 hours
+  // Check if the date is within the last 12 hours
   const now = new Date();
-  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-  return publishDate >= twentyFourHoursAgo;
+  const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+  return publishDate >= twelveHoursAgo;
 }
 
 // Add this diagnostic function
@@ -511,6 +519,28 @@ async function crawlArticleContent(url) {
     const isInterpressnews = url.includes('interpressnews.ge');
     const isCivilGe = url.includes('civil.ge');
 
+    // Extract the source from the URL
+    let source = '';
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('interpressnews.ge')) {
+        source = 'interpressnews.ge';
+      } else if (urlObj.hostname.includes('civil.ge')) {
+        source = 'civil.ge';
+      } else if (urlObj.hostname.includes('police.ge')) {
+        source = 'police.ge';
+      } else if (urlObj.hostname.includes('facebook.com')) {
+        source = 'facebook.com';
+      } else {
+        source = urlObj.hostname.replace('www.', '');
+      }
+    } catch (error) {
+      console.error(`Error extracting source from URL ${url}:`, error);
+      source = 'civil.ge'; // Default source
+    }
+
+    console.log(`Source determined from URL: ${source}`);
+
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -522,7 +552,7 @@ async function crawlArticleContent(url) {
 
     if (!response.ok) {
       console.error(`Failed to fetch article: ${response.status} ${response.statusText}`);
-      return { content: null, publishDate: null };
+      return { content: null, publishDate: null, source: null };
     }
 
     const html = await response.text();
@@ -666,13 +696,13 @@ async function crawlArticleContent(url) {
 
     if (!content) {
       console.log('No content found on the page');
-      return { content: null, publishDate: null };
+      return { content: null, publishDate: null, source: null };
     }
 
-    return { content, publishDate };
+    return { content, publishDate, source };
   } catch (error) {
     console.error('Error crawling article content:', error);
-    return { content: null, publishDate: null };
+    return { content: null, publishDate: null, source: null };
   }
 }
 
@@ -991,7 +1021,7 @@ async function postToWordPress(article, rewrittenArticle) {
       },
       body: JSON.stringify({
         title: title,
-        content: cleanedContent,
+        content: cleanedContent + `\n\n<p><small>メディアソース: ${source}</small></p>`, // Add source to content
         excerpt: excerpt, // Consistent excerpt for all articles
         status: 'publish',
         author: 1, // Use the user ID of the WordPress account (usually 1 for the primary admin)
@@ -1095,14 +1125,14 @@ async function main() {
         continue;
       }
 
-      // Check if the article was published within the last 24 hours
+      // Check if the article was published within the last 12 hours
       if (result.publishDate) {
         console.log(`Publication date: ${result.publishDate}`);
-        const isRecent = isPublishedWithin24Hours(result.publishDate);
-        console.log(`Published within last 24 hours: ${isRecent ? 'Yes' : 'No'}`);
+        const isRecent = isPublishedWithin12Hours(result.publishDate);
+        console.log(`Published within last 12 hours: ${isRecent ? 'Yes' : 'No'}`);
 
         if (!isRecent) {
-          console.log('Article not published within last 24 hours. Skipping.');
+          console.log('Article not published within last 12 hours. Skipping.');
           continue;
         }
 
@@ -1111,8 +1141,14 @@ async function main() {
         console.log('Could not determine publication date. Processing anyway.');
       }
 
-      // Add content to the article object
+      // Add content and source to the article object
       article.content = result.content;
+
+      // Update the source if it was determined from the article content
+      if (result.source) {
+        console.log(`Updating source from ${article.source} to ${result.source}`);
+        article.source = result.source;
+      }
 
       // 3. Rewrite the article
       console.log('Rewriting article...');
@@ -1156,7 +1192,7 @@ async function main() {
   // Print summary
   console.log('\n=== PROCESSING SUMMARY ===');
   console.log(`Total articles found: ${articles.length}`);
-  console.log(`Articles published in last 24 hours: ${results.recentArticles}`);
+  console.log(`Articles published in last 12 hours: ${results.recentArticles}`);
   console.log(`Articles processed: ${results.processed}`);
   console.log(`Articles successfully posted: ${results.successful}`);
   console.log(`Articles failed: ${results.failed}`);
