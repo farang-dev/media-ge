@@ -5,7 +5,7 @@ const fs = require('fs');
 
 // WordPress.com API URL
 const WP_API_URL = process.env.WORDPRESS_API_URL;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.unmanned-newsroom.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.georgia-news-japan.online';
 
 async function generateSitemap() {
   if (!WP_API_URL) {
@@ -35,7 +35,7 @@ async function generateSitemap() {
     // Output instructions for submitting to Google
     console.log('\nTo submit your sitemap to Google:');
     console.log('1. Go to Google Search Console (https://search.google.com/search-console)');
-    console.log('2. Add your site if you haven\'t already (https://www.unmanned-newsroom.com)');
+    console.log('2. Add your site if you haven\'t already (https://www.georgia-news-japan.online)');
     console.log('3. Go to Sitemaps section and submit your sitemap URL');
     console.log(`   (e.g., ${SITE_URL}/sitemap.xml)`);
   } catch (error) {
@@ -96,12 +96,12 @@ function generateSitemapXML(posts) {
 
   // Add each post
   posts.forEach(post => {
-    // Convert WordPress.com URL to unmanned-newsroom.com URL
+    // Convert WordPress.com URL to georgia-news-japan.online URL
     const wpUrl = new URL(post.link);
     const slug = wpUrl.pathname.split('/').filter(Boolean).pop();
     // Ensure we don't have double slashes in the URL
     const baseUrl = SITE_URL.endsWith('/') ? SITE_URL.slice(0, -1) : SITE_URL;
-    const postUrl = `${baseUrl}/${slug}`;
+    const postUrl = `${baseUrl}/post/${slug}`;
     const lastMod = new Date(post.modified).toISOString();
 
     urls += '  <url>\n' +
@@ -118,8 +118,8 @@ function generateSitemapXML(posts) {
     if (pubDate > twoDaysAgo) {
       urls += '    <news:news>\n' +
         '      <news:publication>\n' +
-        '        <news:name>Unmanned Newsroom</news:name>\n' +
-        '        <news:language>en</news:language>\n' +
+        '        <news:name>ジョージア🇬🇪ニュース</news:name>\n' +
+        '        <news:language>ja</news:language>\n' +
         '      </news:publication>\n' +
         `      <news:publication_date>${pubDate.toISOString()}</news:publication_date>\n` +
         `      <news:title>${escapeXML(post.title.rendered)}</news:title>\n` +

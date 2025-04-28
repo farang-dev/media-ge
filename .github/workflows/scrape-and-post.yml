@@ -31,4 +31,19 @@ jobs:
           WORDPRESS_USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
           WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           TARGET_WEBSITE: 'https://civil.ge/ka/archives/category/news-ka,https://www.interpressnews.ge/ka/category/11-samartali/'
+
+      - name: Generate sitemap
+        run: node scripts/generate-sitemap.js
+        env:
+          WORDPRESS_API_URL: ${{ secrets.WORDPRESS_API_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+
+      - name: Commit and push sitemap changes
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          git add public/sitemap.xml
+          git commit -m "Update sitemap after article scraping [skip ci]" || echo "No changes to commit"
+          git push

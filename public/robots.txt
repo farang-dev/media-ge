@@ -2,10 +2,11 @@ User-agent: *
 Allow: /
 
 # Allow all bots to access all content
-Disallow: /wp-admin/
-Disallow: /wp-includes/
-Disallow: /wp-content/plugins/
-Disallow: /wp-json/
+Disallow: /api/
 
 # Primary website URL
-Sitemap: https://www.unmanned-newsroom.com/sitemap.xml
+Sitemap: https://www.georgia-news-japan.online/sitemap.xml
+
+# Website information
+# ジョージア🇬🇪ニュース - Georgian news in Japanese
+# https://www.georgia-news-japan.online
