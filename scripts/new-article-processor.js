@@ -18,7 +18,7 @@ const mainScript = require('./test-full-process.js');
 // Override the rewriteArticle function to ensure we're using the correct model
 async function rewriteArticle(article) {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-  
+
   // Add more debugging for the OpenRouter API key
   console.log('Environment variables:');
   console.log('OPENROUTER_API_KEY exists:', !!process.env.OPENROUTER_API_KEY);
@@ -26,7 +26,7 @@ async function rewriteArticle(article) {
     console.log('OPENROUTER_API_KEY length:', process.env.OPENROUTER_API_KEY.length);
     console.log('OPENROUTER_API_KEY first 3 chars:', process.env.OPENROUTER_API_KEY.substring(0, 3));
   }
-  
+
   if (!OPENROUTER_API_KEY) {
     console.error('OpenRouter API key not configured');
     console.error('Please set OPENROUTER_API_KEY in your .env file');
@@ -39,7 +39,7 @@ async function rewriteArticle(article) {
     // First, generate SEO-optimized title and meta description
     console.log('Generating SEO metadata...');
     console.log('Using model: microsoft/mai-ds-r1:free');
-    
+
     const seoResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -73,22 +73,38 @@ async function rewriteArticle(article) {
     const seoData = await seoResponse.json();
     console.log('SEO API response:', JSON.stringify(seoData, null, 2));
 
-    if (!seoData.choices || !seoData.choices[0] || !seoData.choices[0].message || !seoData.choices[0].message.content) {
-      throw new Error('Invalid response format from SEO API');
+    // Check for different possible response formats
+    let seoContent = '';
+
+    if (seoData.choices && seoData.choices[0]) {
+      if (seoData.choices[0].message && seoData.choices[0].message.content) {
+        // Standard format
+        seoContent = seoData.choices[0].message.content;
+      } else if (seoData.choices[0].message && seoData.choices[0].message.reasoning) {
+        // Alternative format where content is in reasoning field
+        seoContent = seoData.choices[0].message.reasoning;
+      } else if (seoData.choices[0].text) {
+        // Legacy format
+        seoContent = seoData.choices[0].text;
+      }
     }
 
-    const seoText = seoData.choices[0].message.content;
+    if (!seoContent) {
+      console.error('Could not extract content from SEO API response. Using original title as fallback.');
+      // Instead of throwing an error, we'll use the original title as a fallback
+      seoContent = `TITLE: ${article.title}\nMETA: ${article.title}`;
+    }
 
     // Extract SEO title and meta description
     let seoTitle = article.title;
     let seoMetaDescription = '';
 
-    const titleMatch = seoText.match(/TITLE:\s*(.+)/);
+    const titleMatch = seoContent.match(/TITLE:\s*(.+)/);
     if (titleMatch && titleMatch[1]) {
       seoTitle = titleMatch[1].trim();
     }
 
-    const metaMatch = seoText.match(/META:\s*(.+)/);
+    const metaMatch = seoContent.match(/META:\s*(.+)/);
     if (metaMatch && metaMatch[1]) {
       seoMetaDescription = metaMatch[1].trim();
     }
@@ -131,15 +147,30 @@ async function rewriteArticle(article) {
     const data = await response.json();
     console.log('Translation API response:', JSON.stringify(data, null, 2));
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+    // Check for different possible response formats
+    let translationContent = '';
+
+    if (data.choices && data.choices[0]) {
+      if (data.choices[0].message && data.choices[0].message.content) {
+        // Standard format
+        translationContent = data.choices[0].message.content;
+      } else if (data.choices[0].message && data.choices[0].message.reasoning) {
+        // Alternative format where content is in reasoning field
+        translationContent = data.choices[0].message.reasoning;
+      } else if (data.choices[0].text) {
+        // Legacy format
+        translationContent = data.choices[0].text;
+      }
+    }
+
+    if (!translationContent) {
+      console.error('Could not extract content from translation API response.');
       throw new Error('Invalid response format from translation API');
     }
 
-    const rewrittenText = data.choices[0].message.content;
-
     // Extract the title and content
     // The title is the first line, and the content is everything after the first blank line
-    const lines = rewrittenText.split('\n');
+    const lines = translationContent.split('\n');
     const title = lines[0];
     const content = lines.slice(2).join('\n'); // Skip the title and the blank line
 
@@ -240,14 +271,14 @@ async function main() {
         continue;
       }
 
-      // Check if the article was published within the last 24 hours
+      // Check if the article was published within the last 12 hours
       if (result.publishDate) {
         console.log(`Publication date: ${result.publishDate}`);
-        const isRecent = mainScript.isPublishedWithin24Hours(result.publishDate);
-        console.log(`Published within last 24 hours: ${isRecent ? 'Yes' : 'No'}`);
+        const isRecent = mainScript.isPublishedWithin12Hours(result.publishDate);
+        console.log(`Published within last 12 hours: ${isRecent ? 'Yes' : 'No'}`);
 
         if (!isRecent) {
-          console.log('Article not published within last 24 hours. Skipping.');
+          console.log('Article not published within last 12 hours. Skipping.');
           continue;
         }
 
@@ -301,7 +332,7 @@ async function main() {
   // Print summary
   console.log('\n=== PROCESSING SUMMARY ===');
   console.log(`Total articles found: ${articles.length}`);
-  console.log(`Articles published in last 24 hours: ${results.recentArticles}`);
+  console.log(`Articles published in last 12 hours: ${results.recentArticles}`);
   console.log(`Articles processed: ${results.processed}`);
   console.log(`Articles successfully posted: ${results.successful}`);
   console.log(`Articles failed: ${results.failed}`);

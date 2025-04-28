@@ -552,6 +552,142 @@ async function crawlArticleContent(url) {
 
     if (!response.ok) {
       console.error(`Failed to fetch article: ${response.status} ${response.statusText}`);
+
+      // Add retry logic for Gateway Timeout errors
+      if (response.status === 504) {
+        console.log('Gateway Timeout error. Retrying after 3 seconds...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Try again with a longer timeout
+        try {
+          const retryResponse = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.5',
+              'Cache-Control': 'no-cache'
+            },
+            timeout: 10000 // Longer timeout
+          });
+
+          if (retryResponse.ok) {
+            console.log('Retry successful!');
+            const html = await retryResponse.text();
+            const $ = cheerio.load(html);
+            // Continue with the original logic...
+            // But we need to duplicate the content extraction code here
+
+            // Extract content with site-specific selectors
+            let content = '';
+
+            // Use different selectors based on the website
+            let selectors = [];
+
+            if (isInterpressnews) {
+              selectors = [
+                // Try to get the main content area
+                'body > div > div > div',
+                // Fallback selectors
+                'body > div',
+                '.article-text',
+                '.article-body',
+                '.news-text',
+                '.news-body',
+                '.content-text',
+                '.article-content',
+                '#article-body'
+              ];
+            } else if (isCivilGe) {
+              selectors = [
+                '.entry-content',
+                '.post-content',
+                '.content',
+                'article .content'
+              ];
+            } else {
+              // Generic selectors for other websites
+              selectors = [
+                '.entry-content',
+                '.post-content',
+                '.content',
+                'article .content',
+                '.article-body',
+                '.article-text',
+                'article',
+                '.news-text',
+                '.news-body',
+                '.content-text',
+                '.article-content',
+                '#article-body'
+              ];
+            }
+
+            for (const selector of selectors) {
+              if ($(selector).length > 0) {
+                content = $(selector).html();
+                break;
+              }
+            }
+
+            // Extract the publication date
+            let publishDate = null;
+
+            // Use different date selectors based on the website
+            let dateSelectors = [];
+
+            if (isInterpressnews) {
+              dateSelectors = [
+                '.article-date',
+                '.news-date',
+                '.date',
+                'time',
+                '.article-info time',
+                '.article-time'
+              ];
+            } else if (isCivilGe) {
+              dateSelectors = [
+                'time',
+                '.article__date',
+                '.article-date',
+                '.post-date',
+                '[datetime]'
+              ];
+            } else {
+              // Generic date selectors for other websites
+              dateSelectors = [
+                'time',
+                '.article__date',
+                '.article-date',
+                '.post-date',
+                '[datetime]',
+                '.byline time',
+                '.date',
+                '.news-date',
+                '.article-info time',
+                '.article-time'
+              ];
+            }
+
+            for (const selector of dateSelectors) {
+              if ($(selector).length > 0) {
+                const dateElement = $(selector).first();
+                publishDate = dateElement.attr('datetime') || dateElement.text().trim();
+                break;
+              }
+            }
+
+            if (!content) {
+              console.log('No content found on the page after retry');
+              return { content: null, publishDate: null, source: null };
+            }
+
+            return { content, publishDate, source };
+          }
+        } catch (retryError) {
+          console.error('Error during retry:', retryError);
+        }
+      }
+
       return { content: null, publishDate: null, source: null };
     }
 
@@ -1205,3 +1341,14 @@ async function main() {
 main().catch(error => {
   console.error('Error in main process:', error);
 });
+
+// Export functions for use in other scripts
+module.exports = {
+  testWordPressConnection,
+  crawlWebsite,
+  crawlAlternative,
+  crawlArticleContent,
+  rewriteArticle,
+  postToWordPress,
+  isPublishedWithin12Hours
+};
