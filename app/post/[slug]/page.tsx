@@ -33,12 +33,21 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       description: metaDescription,
       type: 'article',
       publishedTime: post.date,
-      authors: [post._embedded?.author?.[0]?.name || 'Anonymous']
+      authors: [post._embedded?.author?.[0]?.name || 'Anonymous'],
+      images: [
+        {
+          url: '/og-image.jpg',
+          width: 1200,
+          height: 630,
+          alt: '🇬🇪 ジョージア ニュース',
+        }
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: metaTitle,
-      description: metaDescription
+      description: metaDescription,
+      images: ['/og-image.jpg'],
     }
   };
 }

@@ -5,17 +5,30 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'ジョージアニュース',
+  title: '🇬🇪 ジョージア ニュース',
   description: 'ジョージアの最近のニュースを日本人の方向けて日本語でお届け',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
-    title: 'ジョージアニュース',
+    title: '🇬🇪 ジョージア ニュース',
     description: 'ジョージアの最近のニュースを日本人の方向けて日本語でお届け',
-    type: 'website'
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: '🇬🇪 ジョージア ニュース',
+      }
+    ],
   },
   twitter: {
-    card: 'summary',
-    title: 'ジョージアニュース',
-    description: 'ジョージアの最近のニュースを日本人の方向けて日本語でお届け'
+    card: 'summary_large_image',
+    title: '🇬🇪 ジョージア ニュース',
+    description: 'ジョージアの最近のニュースを日本人の方向けて日本語でお届け',
+    images: ['/og-image.jpg'],
   }
 }
 
