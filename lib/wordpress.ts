@@ -183,7 +183,15 @@ function formatPost(post: any): Post {
         source = 'interpressnews.ge';
       } else if (url.hostname.includes('civil.ge')) {
         source = 'civil.ge';
-      } else {
+      } else if (url.hostname.includes('police.ge')) {
+        source = 'police.ge';
+      } else if (url.hostname.includes('facebook.com')) {
+        source = 'facebook.com';
+      } else if (url.hostname.includes('wordpress.com')) {
+        // Don't use wordpress.com as a source - use the default instead
+        source = '';
+      } else if (!url.hostname.includes('geinfojp')) {
+        // Only use the hostname as source if it's not our own site
         source = url.hostname.replace('www.', '');
       }
     } catch (error) {

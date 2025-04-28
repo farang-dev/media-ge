@@ -63,31 +63,37 @@ async function fetchAllPosts(accessToken) {
 // Function to determine the correct source from content
 function determineCorrectSource(content, url) {
   // Check for specific patterns in the content or URL
-  
+
   // Check for interpressnews.ge
-  if (content.includes('interpressnews.ge') || 
+  if (content.includes('interpressnews.ge') ||
       (url && url.includes('interpressnews.ge'))) {
     return 'interpressnews.ge';
   }
-  
+
   // Check for civil.ge
-  if (content.includes('civil.ge') || 
+  if (content.includes('civil.ge') ||
       (url && url.includes('civil.ge'))) {
     return 'civil.ge';
   }
-  
+
   // Check for police.ge
-  if (content.includes('police.ge') || 
+  if (content.includes('police.ge') ||
       (url && url.includes('police.ge'))) {
     return 'police.ge';
   }
-  
+
   // Check for facebook.com
-  if (content.includes('facebook.com') || 
+  if (content.includes('facebook.com') ||
       (url && url.includes('facebook.com'))) {
     return 'facebook.com';
   }
-  
+
+  // Check if it's our own WordPress site - never use this as a source
+  if ((url && (url.includes('wordpress.com') || url.includes('geinfojp')))) {
+    console.log('Detected WordPress.com URL - using civil.ge as default source');
+    return 'civil.ge';
+  }
+
   // Default to civil.ge if no specific source is found
   return 'civil.ge';
 }
@@ -96,7 +102,7 @@ function determineCorrectSource(content, url) {
 async function updatePostSource(accessToken, postId, content, url, currentSource) {
   // Determine the correct source
   const correctSource = determineCorrectSource(content, url);
-  
+
   // If the source is already correct, skip the update
   if (currentSource === correctSource) {
     console.log(`Post ${postId} already has correct source: ${correctSource}`);
@@ -146,35 +152,35 @@ async function updatePostSource(accessToken, postId, content, url, currentSource
 async function main() {
   try {
     console.log('Starting source check and fix...');
-    
+
     // Get access token
     const accessToken = await getAccessToken();
-    
+
     // Fetch all posts
     const posts = await fetchAllPosts(accessToken);
-    
+
     // Check and update each post
     let correctCount = 0;
     let updatedCount = 0;
     let failedCount = 0;
-    
+
     for (const post of posts) {
       try {
         // Get the current source from meta
         const currentSource = post.meta?.source || post.meta?.article_source || 'civil.ge';
-        
+
         console.log(`\nPost ${post.id}: ${post.title.rendered}`);
         console.log(`Current source: ${currentSource}`);
-        
+
         // Update the post if needed
         const result = await updatePostSource(
-          accessToken, 
-          post.id, 
+          accessToken,
+          post.id,
           post.content.rendered,
           post.link,
           currentSource
         );
-        
+
         if (result.success) {
           if (result.updated) {
             updatedCount++;
@@ -184,7 +190,7 @@ async function main() {
         } else {
           failedCount++;
         }
-        
+
         // Add a small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
@@ -192,14 +198,14 @@ async function main() {
         failedCount++;
       }
     }
-    
+
     console.log('\n=== SOURCE FIX SUMMARY ===');
     console.log(`Total posts processed: ${posts.length}`);
     console.log(`Already correct: ${correctCount}`);
     console.log(`Successfully updated: ${updatedCount}`);
     console.log(`Failed to update: ${failedCount}`);
     console.log('=========================');
-    
+
   } catch (error) {
     console.error('Error in main process:', error);
   }
