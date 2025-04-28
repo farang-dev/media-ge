@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       authors: [post._embedded?.author?.[0]?.name || 'Anonymous'],
       images: [
         {
-          url: '/og-image.jpg',
+          url: 'https://www.georgia-news-japan.online/og-image.jpg',
           width: 1200,
           height: 630,
           alt: '🇬🇪 ジョージア ニュース',
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       card: 'summary_large_image',
       title: metaTitle,
       description: metaDescription,
-      images: ['/og-image.jpg'],
+      images: ['https://www.georgia-news-japan.online/og-image.jpg'],
     }
   };
 }

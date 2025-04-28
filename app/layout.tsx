@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/og-image.jpg',
+        url: 'https://www.georgia-news-japan.online/og-image.jpg',
         width: 1200,
         height: 630,
         alt: '🇬🇪 ジョージア ニュース',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '🇬🇪 ジョージア ニュース',
     description: 'ジョージアの最近のニュースを日本人の方向けて日本語でお届け',
-    images: ['/og-image.jpg'],
+    images: ['https://www.georgia-news-japan.online/og-image.jpg'],
   }
 }
 
