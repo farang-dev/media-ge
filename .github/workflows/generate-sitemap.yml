@@ -1,9 +1,9 @@
 name: Generate Sitemap
 
 on:
-  # Run twice a day
+  # Run four times a day
   schedule:
-    - cron: '0 */12 * * *'  # Every 12 hours
+    - cron: '0 */6 * * *'  # Every 6 hours
 
   # Run after successful article scraping
   workflow_run:

@@ -4,6 +4,7 @@ import RelatedArticles from '@/components/RelatedArticles';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 
 interface PostPageProps {
   params: {
@@ -22,8 +23,14 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   }
 
   // Check if the post has meta title and description
-  const metaTitle = post.meta?.yoast_title || post.title.rendered;
-  const metaDescription = post.meta?.yoast_description || post.excerpt.rendered.replace(/<[^>]*>/g, '').substring(0, 155) + '...';
+  // タイトルにキーワードを追加して最適化
+  const metaTitle = post.meta?.yoast_title || `${post.title.rendered} | 🇬🇪ジョージア（グルジア）ニュース`;
+  // 抜粋から HTML タグを削除し、適切な長さに調整
+  let cleanExcerpt = post.excerpt.rendered.replace(/<[^>]*>/g, '').trim();
+  // 文字数を最適化（検索結果で切れにくい長さに）
+  const metaDescription = post.meta?.yoast_description ||
+    (cleanExcerpt.length > 120 ? cleanExcerpt.substring(0, 120) + '...' : cleanExcerpt) +
+    ' | 🇬🇪ジョージアニュース';
 
   return {
     title: metaTitle,
@@ -71,8 +78,50 @@ export default async function PostPage({ params }: PostPageProps) {
   const relatedPosts = await fetchRelatedPosts(post.id, 3);
   console.log(`Fetched ${relatedPosts.length} related posts`);
 
+  // 抜粋から HTML タグを削除し、適切な長さに調整
+  const cleanExcerpt = post.excerpt.rendered.replace(/<[^>]*>/g, '').trim();
+
+  // 構造化データの作成
+  const JsonLdComponent = dynamic(() => import('@/components/JsonLd'), { ssr: false });
+
+  // 記事の公開日と更新日
+  const datePublished = new Date(post.date).toISOString();
+  // 更新日がない場合は公開日を使用
+  const dateModified = new Date(post.date).toISOString();
+
+  // 著者情報
+  const author = post._embedded?.author?.[0]?.name || 'ジョージアニュース編集部';
+
+  // 構造化データ
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    'headline': post.title.rendered,
+    'description': cleanExcerpt,
+    'image': 'https://www.georgia-news-japan.online/og-image.jpg',
+    'datePublished': datePublished,
+    'dateModified': dateModified,
+    'author': {
+      '@type': 'Person',
+      'name': author
+    },
+    'publisher': {
+      '@type': 'Organization',
+      'name': '🇬🇪 ジョージア ニュース',
+      'logo': {
+        '@type': 'ImageObject',
+        'url': 'https://www.georgia-news-japan.online/favicon.ico'
+      }
+    },
+    'mainEntityOfPage': {
+      '@type': 'WebPage',
+      '@id': `https://www.georgia-news-japan.online/post/${params.slug}`
+    }
+  };
+
   return (
     <>
+      <JsonLdComponent data={articleSchema} />
       <FullArticle post={post} />
       <div className="max-w-3xl mx-auto px-4">
         <RelatedArticles posts={relatedPosts} />
