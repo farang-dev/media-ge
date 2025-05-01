@@ -15,7 +15,10 @@ export default function JsonLd({ data }: JsonLdProps) {
     document.head.appendChild(script);
 
     return () => {
-      document.head.removeChild(script);
+      // Check if the script is still in the document before removing
+      if (script && document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, [data]);
 
