@@ -8,8 +8,9 @@ export default function Document() {
         <link rel="icon" href="/favicon.ico" />
         <link rel="shortcut icon" href="/favicon.ico" />
 
-        {/* Add a timestamp to force cache refresh */}
-        <meta name="favicon-version" content={new Date().toISOString()} />
+        {/* Static favicon links with explicit types */}
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />

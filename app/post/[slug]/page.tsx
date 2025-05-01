@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import DirectFavicon from '@/components/DirectFavicon';
 
 interface PostPageProps {
   params: {
@@ -121,6 +122,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
   return (
     <>
+      <DirectFavicon />
       <JsonLdComponent data={articleSchema} />
       <FullArticle post={post} />
       <div className="max-w-3xl mx-auto px-4">
