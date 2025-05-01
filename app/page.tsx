@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import DirectFavicon from '@/components/DirectFavicon';
+import DataUriFavicon from '@/components/DataUriFavicon';
 
 interface PostsProps {
   page: number;
@@ -45,6 +46,7 @@ export default function Home({
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
       <DirectFavicon />
+      <DataUriFavicon />
       <JsonLdComponent data={websiteSchema} />
       <header className="mb-8 bg-white p-6 rounded-lg shadow-sm border-l-4 border-georgian-red">
         <Link href="/">
