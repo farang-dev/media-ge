@@ -5,8 +5,15 @@ export default function Document() {
     <Html lang="ja">
       <Head>
         {/* Favicon */}
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon/favicon-16x16.png" sizes="16x16" type="image/png" />
+        <link rel="icon" href="/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
+        <link rel="icon" href="/favicon/favicon-96x96.png" sizes="96x96" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" sizes="180x180" />
+        <link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#da291c" />
+        <link rel="manifest" href="/favicon/site.webmanifest" />
+        <meta name="msapplication-TileColor" content="#da291c" />
+        <meta name="theme-color" content="#ffffff" />
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
