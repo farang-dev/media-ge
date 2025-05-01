@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { GoogleAnalyticsProvider } from './providers'
+import Favicon from '@/components/Favicon'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -55,6 +56,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
+      <Favicon />
       <body className={`${inter.className} bg-gray-100`}>
         <GoogleAnalyticsProvider>
           <div className="min-h-screen">

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Standalone Favicon Test</title>
+  <!-- Base URL to ensure relative paths work correctly -->
+  <base href="https://www.georgia-news-japan.online/">
+  
+  <!-- Multiple favicon formats for maximum compatibility -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #da291c;
+    }
+    .test-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .favicon-display {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .favicon-display img {
+      margin-right: 10px;
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <h1>🇬🇪 Standalone Favicon Test</h1>
+  
+  <div class="test-section">
+    <h2>Direct Favicon Display</h2>
+    <p>Your favicon should appear below in various sizes:</p>
+    
+    <div class="favicon-display">
+      <img src="/favicon.ico" alt="Favicon" width="16" height="16">
+      <span>16x16 favicon.ico</span>
+    </div>
+    
+    <div class="favicon-display">
+      <img src="/favicon.ico" alt="Favicon" width="32" height="32">
+      <span>32x32 favicon.ico</span>
+    </div>
+    
+    <div class="favicon-display">
+      <img src="/favicon-16x16.png" alt="Favicon 16x16" width="16" height="16">
+      <span>16x16 PNG favicon</span>
+    </div>
+    
+    <div class="favicon-display">
+      <img src="/favicon-32x32.png" alt="Favicon 32x32" width="32" height="32">
+      <span>32x32 PNG favicon</span>
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Browser Tab Test</h2>
+    <p>Check if the favicon appears in the browser tab for this page.</p>
+    <p>If you see the favicon in the browser tab, but not on your main site, the issue is with your Next.js configuration.</p>
+  </div>
+  
+  <div class="test-section">
+    <h2>Direct Links</h2>
+    <p>Try accessing the favicon files directly:</p>
+    <ul>
+      <li><a href="/favicon.ico" target="_blank">favicon.ico</a></li>
+      <li><a href="/favicon-16x16.png" target="_blank">favicon-16x16.png</a></li>
+      <li><a href="/favicon-32x32.png" target="_blank">favicon-32x32.png</a></li>
+      <li><a href="/apple-touch-icon.png" target="_blank">apple-touch-icon.png</a></li>
+    </ul>
+    <p>If these links work but the favicon still doesn't appear, there might be a caching issue or a problem with your server configuration.</p>
+  </div>
+  
+  <div class="test-section">
+    <h2>HTML Source</h2>
+    <p>This is the HTML source code for this page. You can copy and use it as a template:</p>
+    <pre style="background: #f5f5f5; padding: 15px; overflow: auto; max-height: 300px;">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Standalone Favicon Test&lt;/title&gt;
+  &lt;!-- Base URL to ensure relative paths work correctly --&gt;
+  &lt;base href="https://www.georgia-news-japan.online/"&gt;
+  
+  &lt;!-- Multiple favicon formats for maximum compatibility --&gt;
+  &lt;link rel="icon" href="/favicon.ico" sizes="any"&gt;
+  &lt;link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"&gt;
+  &lt;link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"&gt;
+  &lt;link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;!-- Page content --&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+    </pre>
+  </div>
+  
+  <script>
+    // Add a timestamp to show when the page was loaded
+    document.write('<p>Page loaded at: ' + new Date().toLocaleString() + '</p>');
+  </script>
+</body>
+</html>
