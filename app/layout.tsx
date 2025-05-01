@@ -9,11 +9,7 @@ export const metadata: Metadata = {
   title: '🇬🇪 ジョージア ニュース',
   description: '🇬🇪 ジョージア（旧グルジア）の最新ニュース・政治・経済・社会情報を日本語で毎日お届け。信頼性の高いジョージアメディアから厳選した記事を日本語に翻訳してお届けする唯一の日本語ニュースサイト。',
   icons: {
-    icon: [
-      { url: '/favicon.ico' },
-    ],
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/favicon.ico',
   },
   openGraph: {
     title: '🇬🇪 ジョージア ニュース',
