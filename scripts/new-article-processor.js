@@ -12,9 +12,6 @@ const WP_USERNAME = process.env.WORDPRESS_USERNAME;
 const WP_PASSWORD = process.env.WORDPRESS_PASSWORD;
 const TARGET_WEBSITE = process.env.TARGET_WEBSITE || 'https://civil.ge/ka/archives/category/news-ka';
 
-// Import the main script functions
-const mainScript = require('./test-full-process.js');
-
 // Override the rewriteArticle function to ensure we're using the correct model
 async function rewriteArticle(article) {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -218,7 +215,7 @@ async function main() {
   console.log('Using model: microsoft/mai-ds-r1:free');
 
   // Test WordPress connection first
-  const connectionOk = await mainScript.testWordPressConnection();
+  const connectionOk = await testWordPressConnection();
   if (!connectionOk) {
     console.error('WordPress connection test failed. Fix connection issues before continuing.');
     // You can choose to exit here or continue with the test
@@ -226,11 +223,11 @@ async function main() {
   }
 
   // 1. Crawl website to find articles
-  let articles = await mainScript.crawlWebsite(TARGET_WEBSITE);
+  let articles = await crawlWebsite(TARGET_WEBSITE);
 
   if (articles.length === 0) {
     console.log('No articles found with primary method, trying alternative approach...');
-    articles = await mainScript.crawlAlternative(TARGET_WEBSITE);
+    articles = await crawlAlternative(TARGET_WEBSITE);
   }
 
   if (articles.length === 0) {
@@ -263,7 +260,7 @@ async function main() {
     try {
       // 2. Crawl article content
       console.log('Crawling article content...');
-      const result = await mainScript.crawlArticleContent(article.url);
+      const result = await crawlArticleContent(article.url);
 
       if (!result || !result.content) {
         console.log('Failed to extract article content. Skipping.');
@@ -274,7 +271,7 @@ async function main() {
       // Check if the article was published within the last 12 hours
       if (result.publishDate) {
         console.log(`Publication date: ${result.publishDate}`);
-        const isRecent = mainScript.isPublishedWithin12Hours(result.publishDate);
+        const isRecent = isPublishedWithin12Hours(result.publishDate);
         console.log(`Published within last 12 hours: ${isRecent ? 'Yes' : 'No'}`);
 
         if (!isRecent) {
@@ -306,7 +303,7 @@ async function main() {
 
       // 4. Post to WordPress
       console.log('Posting to WordPress...');
-      const posted = await mainScript.postToWordPress(article, rewrittenArticle);
+      const posted = await postToWordPress(article, rewrittenArticle);
 
       if (posted) {
         console.log('Article posted to WordPress successfully!');
@@ -345,3 +342,322 @@ async function main() {
 main().catch(error => {
   console.error('Error in main process:', error);
 });
+
+async function testWordPressConnection() {
+  console.log('Testing WordPress connection...');
+  console.log(`API URL: ${WP_API_URL}`);
+  console.log(`Username: ${WP_USERNAME}`);
+  try {
+    const response = await fetch(`${WP_API_URL}/posts?per_page=1`);
+    console.log(`Public API Test: ${response.status} ${response.statusText}`);
+    if (!response.ok) {
+      console.error('WordPress API not accessible. Check URL and if REST API is enabled.');
+      return false;
+    }
+  } catch (error) {
+    console.error('Cannot connect to WordPress API:', error.message);
+    return false;
+  }
+  try {
+    const apiKey = process.env.WORDPRESS_API_KEY;
+    const apiKeyNoSpaces = apiKey.replace(/\s+/g, '');
+    console.log('Testing with spaces in API key...');
+    const basicAuth = Buffer.from(`${WP_USERNAME}:${apiKey}`).toString('base64');
+    const authResponse = await fetch(`${WP_API_URL}/users/me`, {
+      headers: {
+        'Authorization': `Basic ${basicAuth}`
+      }
+    });
+    console.log(`Auth Test (with spaces): ${authResponse.status} ${authResponse.statusText}`);
+    if (authResponse.ok) {
+      const userData = await authResponse.json();
+      console.log(`Authenticated as: ${userData.name}`);
+      return true;
+    }
+    console.log('Testing without spaces in API key...');
+    const basicAuthNoSpaces = Buffer.from(`${WP_USERNAME}:${apiKeyNoSpaces}`).toString('base64');
+    const authResponseNoSpaces = await fetch(`${WP_API_URL}/users/me`, {
+      headers: {
+        'Authorization': `Basic ${basicAuthNoSpaces}`
+      }
+    });
+    console.log(`Auth Test (no spaces): ${authResponseNoSpaces.status} ${authResponseNoSpaces.statusText}`);
+    if (authResponseNoSpaces.ok) {
+      const userData = await authResponseNoSpaces.json();
+      console.log(`Authenticated as: ${userData.name}`);
+      return true;
+    }
+    console.error('Authentication failed with both formats. Check credentials.');
+    return false;
+  } catch (error) {
+    console.error('Error testing authentication:', error.message);
+    return false;
+  }
+}
+
+async function crawlWebsite(url) {
+  console.log(`Crawling website: ${url}`);
+  try {
+    let source = '';
+    try {
+      const urlObj = new URL(url);
+      source = urlObj.hostname.replace('www.', '');
+    } catch (error) {
+      console.error(`Error extracting source from URL ${url}:`, error);
+      source = 'civil.ge';
+    }
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const html = await response.text();
+    fs.writeFileSync('raw-html.txt', html);
+    console.log('Raw HTML saved to raw-html.txt');
+    const $ = cheerio.load(html);
+    const articleUrls = [];
+    if (url.includes('civil.ge')) {
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href && href.includes('civil.ge/ka/archives/') && !href.includes('/category/') && !href.includes('/author/')) {
+          articleUrls.push(href);
+        }
+      });
+    } else if (url.includes('interpressnews.ge')) {
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
+        if (href && (href.includes('/ka/article/') || href.startsWith('/ka/article/')) && title && title.length > 10 && !href.includes('/category/')) {
+          const fullUrl = href.startsWith('http') ? href : `https://www.interpressnews.ge${href.startsWith('/') ? '' : '/'}${href}`;
+          articleUrls.push(fullUrl);
+        }
+      });
+    } else {
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href && href.includes(source) && !href.includes('/category/') && !href.includes('/author/')) {
+          const fullUrl = href.startsWith('http') ? href : `https://${source}${href.startsWith('/') ? '' : '/'}${href}`;
+          articleUrls.push(fullUrl);
+        }
+      });
+    }
+    const uniqueUrls = [...new Set(articleUrls)];
+    console.log(`Found ${uniqueUrls.length} unique article URLs`);
+    if (uniqueUrls.length === 0) {
+      console.log('No articles found, returning test article for pipeline testing');
+      return [{
+        title: "Test Article from " + url,
+        url: url,
+        publishedDate: new Date().toISOString(),
+        source: source
+      }];
+    }
+    const articles = [];
+    for (let i = 0; i < Math.min(5, uniqueUrls.length); i++) {
+      const articleUrl = uniqueUrls[i];
+      console.log(`Getting title for article: ${articleUrl}`);
+      try {
+        const articleResponse = await fetch(articleUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        if (!articleResponse.ok) {
+          console.log(`Failed to fetch article: ${articleResponse.status} ${articleResponse.statusText}`);
+          continue;
+        }
+        const articleHtml = await articleResponse.text();
+        const $article = cheerio.load(articleHtml);
+        let title = '';
+        if (articleUrl.includes('interpressnews.ge')) {
+          const h1Title = $article('h1').first().text().trim();
+          if (h1Title && h1Title.length > 10) {
+            title = h1Title;
+          } else {
+            const metaTitle = $article('meta[property="og:title"]').attr('content') || $article('title').text().trim();
+            if (metaTitle && metaTitle.length > 10) {
+              title = metaTitle;
+            } else {
+              $article('a').each((_, element) => {
+                const href = $article(element).attr('href');
+                if (href && (href.includes('/ka/article/') || articleUrl.includes(href)) && !href.includes('/category/')) {
+                  const linkText = $article(element).text().trim();
+                  if (linkText && linkText.length > 10) {
+                    title = linkText;
+                    return false;
+                  }
+                }
+              });
+            }
+          }
+        } else {
+          const titleSelectors = ['h1', '.article-title', '.entry-title', '.post-title', '.title'];
+          for (const selector of titleSelectors) {
+            const titleElement = $article(selector).first();
+            if (titleElement.length > 0) {
+              title = titleElement.text().trim();
+              break;
+            }
+          }
+        }
+        console.log(`Title: ${title}`);
+        if (title) {
+          let articleSource = '';
+          try {
+            const articleUrlObj = new URL(articleUrl);
+            articleSource = articleUrlObj.hostname.replace('www.', '');
+          } catch (error) {
+            console.error(`Error extracting source from article URL ${articleUrl}:`, error);
+            articleSource = source;
+          }
+          articles.push({
+            title,
+            url: articleUrl,
+            publishedDate: new Date().toISOString(),
+            source: articleSource
+          });
+          console.log(`Added article: ${title} (Source: ${articleSource})`);
+        }
+      } catch (error) {
+        console.error(`Error getting title for ${articleUrl}:`, error);
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    if (articles.length > 0) {
+      return articles;
+    }
+    return [{
+      title: "Test Article from " + url,
+      url: url,
+      publishedDate: new Date().toISOString(),
+      source: source
+    }];
+  } catch (error) {
+    console.error('Error crawling website:', error);
+    let source = '';
+    try {
+      const urlObj = new URL(url);
+      source = urlObj.hostname.replace('www.', '');
+    } catch (error) {
+      console.error(`Error extracting source from URL ${url}:`, error);
+      source = 'civil.ge';
+    }
+    return [{
+      title: "Test Article from " + url,
+      url: url,
+      publishedDate: new Date().toISOString(),
+      source: source
+    }];
+  }
+}
+
+async function crawlAlternative(url) {
+  try {
+    console.log('Using alternative crawling approach...');
+    let source = '';
+    try {
+      const urlObj = new URL(url);
+      source = urlObj.hostname.replace('www.', '');
+    } catch (error) {
+      console.error(`Error extracting source from URL ${url}:`, error);
+      source = 'civil.ge';
+    }
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const articles = [];
+    if (url.includes('civil.ge')) {
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
+        if (href && href.includes('civil.ge/ka/archives/') && title && title.length > 5 && !href.includes('/category/') && !href.includes('/author/') && !articles.some(a => a.url === href)) {
+          let articleSource = '';
+          try {
+            const articleUrlObj = new URL(href);
+            articleSource = articleUrlObj.hostname.replace('www.', '');
+          } catch (error) {
+            console.error(`Error extracting source from article URL ${href}:`, error);
+            articleSource = source;
+          }
+          articles.push({
+            title,
+            url: href,
+            publishedDate: new Date().toISOString(),
+            source: articleSource
+          });
+        }
+      });
+    } else if (url.includes('interpressnews.ge')) {
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
+        if (href && (href.includes('interpressnews.ge/ka/article/') || href.startsWith('/ka/article/')) && title && title.length > 5 && !href.includes('/category/') && !href.includes('/author/') && !articles.some(a => a.url === href)) {
+          const fullUrl = href.startsWith('http') ? href : `https://www.interpressnews.ge${href.startsWith('/') ? '' : '/'}${href}`;
+          let articleSource = '';
+          try {
+            const articleUrlObj = new URL(fullUrl);
+            articleSource = articleUrlObj.hostname.replace('www.', '');
+          } catch (error) {
+            console.error(`Error extracting source from article URL ${fullUrl}:`, error);
+            articleSource = source;
+          }
+          articles.push({
+            title,
+            url: fullUrl,
+            publishedDate: new Date().toISOString(),
+            source: articleSource
+          });
+        }
+      });
+    } else {
+      $('a').each((_, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
+        if (href && title && title.length > 5 && !href.includes('/category/') && !href.includes('/author/') && !articles.some(a => a.url === href)) {
+          let fullUrl = href;
+          if (!href.startsWith('http')) {
+            fullUrl = href.startsWith('/') ? `https://${source}${href}` : `https://${source}/${href}`;
+          }
+          let articleSource = '';
+          try {
+            const articleUrlObj = new URL(fullUrl);
+            articleSource = articleUrlObj.hostname.replace('www.', '');
+          } catch (error) {
+            console.error(`Error extracting source from article URL ${fullUrl}:`, error);
+            articleSource = source;
+          }
+          articles.push({
+            title,
+            url: fullUrl,
+            publishedDate: new Date().toISOString(),
+            source: articleSource
+          });
+        }
+      });
+    }
+    console.log(`Found ${articles.length} articles with alternative approach`);
+    return articles.slice(0, 5);
+  } catch (error) {
+    console.error('Error in alternative crawling:', error);
+    return [];
+  }
+}
