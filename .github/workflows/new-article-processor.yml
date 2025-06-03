@@ -63,4 +63,4 @@ jobs:
           grep -n "model:" scripts/test-full-process.js
 
       - name: Run article processor
-        run: node scripts/new-article-processor.js
+        run: node scripts/test-full-process.js
