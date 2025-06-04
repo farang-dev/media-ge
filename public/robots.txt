@@ -8,5 +8,5 @@ Disallow: /api/
 Sitemap: https://www.georgia-news-japan.online/sitemap.xml
 
 # Website information
-# ジョージア🇬🇪ニュース - Georgian news in Japanese
+# ジョージアニュース - Georgian news in Japanese
 # https://www.georgia-news-japan.online
