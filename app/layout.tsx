@@ -6,10 +6,10 @@ import { GoogleAnalyticsProvider } from './providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '🇬🇪 ジョージア ニュース',
+  title: 'ジョージア ニュース - ジョージア（旧グルジア）の専門ニュースサイト',
   description: '🇬🇪 ジョージア（旧グルジア）の最新ニュース・政治・経済・社会情報を日本語で毎日お届け。信頼性の高いジョージアメディアから厳選した記事を日本語に翻訳してお届けする唯一の日本語ニュースサイト。',
   openGraph: {
-    title: '🇬🇪 ジョージア ニュース',
+    title: 'ジョージア ニュース - ジョージア（旧グルジア）の専門ニュースサイト',
     description: '🇬🇪 ジョージア（旧グルジア）の最新ニュース・政治・経済・社会情報を日本語で毎日お届け。信頼性の高いジョージアメディアから厳選した記事を日本語に翻訳してお届けする唯一の日本語ニュースサイト。',
     type: 'website',
     images: [
@@ -17,13 +17,13 @@ export const metadata: Metadata = {
         url: 'https://www.georgia-news-japan.online/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: '🇬🇪 ジョージア ニュース',
+        alt: 'ジョージア ニュース - ジョージア（旧グルジア）の専門ニュースサイト',
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '🇬🇪 ジョージア ニュース',
+    title: 'ジョージア ニュース - ジョージア（旧グルジア）の専門ニュースサイト',
     description: '🇬🇪 ジョージア（旧グルジア）の最新ニュース・政治・経済・社会情報を日本語で毎日お届け。信頼性の高いジョージアメディアから厳選した記事を日本語に翻訳してお届けする唯一の日本語ニュースサイト。',
     images: ['https://www.georgia-news-japan.online/og-image.jpg'],
   }
