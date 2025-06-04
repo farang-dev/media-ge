@@ -118,7 +118,7 @@ function generateSitemapXML(posts) {
     if (pubDate > twoDaysAgo) {
       urls += '    <news:news>\n' +
         '      <news:publication>\n' +
-        '        <news:name>ジョージア🇬🇪ニュース</news:name>\n' +
+        '        <news:name>ジョージアニュース</news:name>\n' +  // REMOVED EMOJI HERE
         '        <news:language>ja</news:language>\n' +
         '      </news:publication>\n' +
         `      <news:publication_date>${pubDate.toISOString()}</news:publication_date>\n` +
