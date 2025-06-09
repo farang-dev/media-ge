@@ -1,11 +1,12 @@
+# Allow all user agents
 User-agent: *
 Allow: /
-
-# Allow all bots to access all content
 Disallow: /api/
 
-# Primary website URL
+# Sitemaps
+Sitemap: https://www.georgia-news-japan.online/sitemap-index.xml
 Sitemap: https://www.georgia-news-japan.online/sitemap.xml
+Sitemap: https://www.georgia-news-japan.online/sitemap-news.xml
 
 # Website information
 # ジョージアニュース - Georgian news in Japanese
