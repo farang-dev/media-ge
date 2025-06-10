@@ -11,6 +11,7 @@ export interface Post {
   };
   link: string;
   date: string;
+  modified: string; // 追加：投稿の更新日時
   author: number;
   slug: string;
   source?: string; // Added source field to store the domain of the original article
@@ -226,6 +227,7 @@ function formatPost(post: any): Post {
     },
     link: post.link,
     date: post.date,
+    modified: post.modified || post.date, // 修正日時がない場合は投稿日時を使用
     author: post.author,
     slug: post.slug,
     source: source,
@@ -253,6 +255,7 @@ function getDummyPosts(): Post[] {
       },
       link: "#",
       date: new Date().toISOString(),
+      modified: new Date().toISOString(),
       author: 1,
       slug: "local-wordpress-not-connected",
       source: "civil.ge",
