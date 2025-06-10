@@ -14,17 +14,20 @@ export default function Footer() {
             </p>
           </div>
           <nav className="flex flex-wrap justify-center">
-            <Link href="/post/georgia-history" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
+            <Link href="/georgia" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
+              ジョージア国情報
+            </Link>
+            <Link href="/georgia#history" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
               ジョージアの歴史
             </Link>
-            <Link href="/sitemap" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
-              サイトマップ
+            <Link href="/georgia#politics" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
+              ジョージアの政治
             </Link>
-            <Link href="/contact" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
-              お問い合わせ
+            <Link href="/georgia#economy" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
+              ジョージアの経済
             </Link>
-            <Link href="/privacy" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
-              プライバシーポリシー
+            <Link href="/georgia#culture" className="text-gray-600 hover:text-georgian-red mx-2 my-1">
+              ジョージアの文化
             </Link>
           </nav>
         </div>

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import Footer from '@/components/Footer';
 
 interface PostPageProps {
   params: {
@@ -60,44 +61,27 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 }
 
 export default async function PostPage({ params }: PostPageProps) {
-  console.log('PostPage component rendering with params:', params);
-
-  // Log the slug we're trying to fetch
-  console.log(`Attempting to fetch post with slug: "${params.slug}"`);
-
   const post = await fetchPost(params.slug);
 
   if (!post) {
-    console.log(`Post not found for slug: "${params.slug}", redirecting to 404 page`);
     notFound();
   }
 
-  console.log(`Successfully fetched post: "${post.title.rendered}"`);
-
-  // Fetch related articles
   const relatedPosts = await fetchRelatedPosts(post.id, 3);
-  console.log(`Fetched ${relatedPosts.length} related posts`);
-
-  // 抜粋から HTML タグを削除し、適切な長さに調整
-  const cleanExcerpt = post.excerpt.rendered.replace(/<[^>]*>/g, '').trim();
 
   // 構造化データの作成
   const JsonLdComponent = dynamic(() => import('@/components/JsonLd'), { ssr: false });
 
-  // 記事の公開日と更新日
+  // 記事の構造化データ
   const datePublished = new Date(post.date).toISOString();
-  // 更新日がない場合は公開日を使用
-  const dateModified = new Date(post.date).toISOString();
-
-  // 著者情報
+  const dateModified = new Date(post.modified).toISOString();
   const author = post._embedded?.author?.[0]?.name || 'ジョージアニュース編集部';
 
-  // 構造化データ
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     'headline': post.title.rendered,
-    'description': cleanExcerpt,
+    'description': post.excerpt.rendered.replace(/<[^>]*>/g, '').trim(),
     'image': 'https://www.georgia-news-japan.online/og-image.jpg',
     'datePublished': datePublished,
     'dateModified': dateModified,
@@ -131,6 +115,7 @@ export default async function PostPage({ params }: PostPageProps) {
           </Link>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

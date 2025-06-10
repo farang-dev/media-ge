@@ -3,6 +3,7 @@ import ArticleList from '@/components/ArticleList';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import Footer from '@/components/Footer';
 
 interface PostsProps {
   page: number;
@@ -53,6 +54,7 @@ export default function Home({
       <Suspense fallback={<div className="p-8 text-center text-gray-600 bg-white rounded-lg shadow-sm">記事を読み込み中...</div>}>
         <Posts page={page} />
       </Suspense>
+      <Footer />
     </main>
   );
 }
