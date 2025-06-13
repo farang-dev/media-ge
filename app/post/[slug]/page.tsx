@@ -36,6 +36,15 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   return {
     title: metaTitle,
     description: metaDescription,
+    robots: {
+      index: true,
+      follow: true,
+      nocache: false,
+      googleBot: {
+        index: true,
+        follow: true,
+      },
+    },
     openGraph: {
       title: metaTitle,
       description: metaDescription,

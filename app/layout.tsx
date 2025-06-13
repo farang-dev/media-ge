@@ -2,12 +2,22 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { GoogleAnalyticsProvider } from './providers'
+import { Suspense } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ジョージア ニュース - ジョージア（旧グルジア）の専門ニュースサイト',
   description: '🇬🇪 ジョージア（旧グルジア）の最新ニュース・政治・経済・社会情報を日本語で毎日お届け。信頼性の高いジョージアメディアから厳選した記事を日本語に翻訳してお届けする唯一の日本語ニュースサイト。',
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   openGraph: {
     title: 'ジョージア ニュース - ジョージア（旧グルジア）の専門ニュースサイト',
     description: '🇬🇪 ジョージア（旧グルジア）の最新ニュース・政治・経済・社会情報を日本語で毎日お届け。信頼性の高いジョージアメディアから厳選した記事を日本語に翻訳してお届けする唯一の日本語ニュースサイト。',
@@ -37,9 +47,11 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${inter.className} bg-gray-100`}>
-        <GoogleAnalyticsProvider>
-          {children}
-        </GoogleAnalyticsProvider>
+        <Suspense fallback={null}>
+          <GoogleAnalyticsProvider>
+            {children}
+          </GoogleAnalyticsProvider>
+        </Suspense>
       </body>
     </html>
   )

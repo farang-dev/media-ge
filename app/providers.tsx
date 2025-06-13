@@ -4,11 +4,8 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { useEffect } from 'react';
 
-export function GoogleAnalyticsProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// Google Analyticsのトラッキング機能を提供するコンポーネント
+function GoogleAnalyticsTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -21,6 +18,14 @@ export function GoogleAnalyticsProvider({
     }
   }, [pathname, searchParams]);
 
+  return null;
+}
+
+export function GoogleAnalyticsProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <>
       {/* Google tag (gtag.js) */}
@@ -37,6 +42,8 @@ export function GoogleAnalyticsProvider({
           gtag('config', 'G-YN60TVKR0X');
         `}
       </Script>
+      {/* useSearchParamsを使用するコンポーネントを分離 */}
+      <GoogleAnalyticsTracker />
       {children}
     </>
   );
