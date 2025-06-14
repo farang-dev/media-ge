@@ -119,7 +119,7 @@ function generateSitemapXML(posts) {
     urls += '  <url>\n' +
       `    <loc>${postUrl}</loc>\n` +
       `    <lastmod>${lastMod}</lastmod>\n` +
-      '    <changefreq>monthly</changefreq>\n' +
+      '    <changefreq>daily</changefreq>\n' +
       '    <priority>0.8</priority>\n' +
       '  </url>\n';
   });
