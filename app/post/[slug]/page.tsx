@@ -86,12 +86,21 @@ export default async function PostPage({ params }: PostPageProps) {
   const dateModified = new Date(post.modified).toISOString();
   const author = post._embedded?.author?.[0]?.name || 'ジョージアニュース編集部';
 
+  // 記事の内容からHTMLタグを削除
+  const articleBody = post.content.rendered.replace(/<[^>]*>/g, '').trim();
+  
+  // 記事の画像を取得（アイキャッチ画像がある場合はそれを使用、なければデフォルト画像）
+  const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://www.georgia-news-japan.online/og-image.jpg';
+
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     'headline': post.title.rendered,
     'description': post.excerpt.rendered.replace(/<[^>]*>/g, '').trim(),
-    'image': 'https://www.georgia-news-japan.online/og-image.jpg',
+    'image': [
+      featuredImage
+    ],
+    'articleBody': articleBody,
     'datePublished': datePublished,
     'dateModified': dateModified,
     'author': {
@@ -103,7 +112,9 @@ export default async function PostPage({ params }: PostPageProps) {
       'name': '🇬🇪 ジョージア ニュース',
       'logo': {
         '@type': 'ImageObject',
-        'url': 'https://www.georgia-news-japan.online/favicon.ico'
+        'url': 'https://www.georgia-news-japan.online/favicon/android-chrome-512x512.png',
+        'width': 512,
+        'height': 512
       }
     },
     'mainEntityOfPage': {
