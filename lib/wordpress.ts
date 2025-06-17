@@ -27,6 +27,9 @@ export interface Post {
     author?: Array<{
       name: string;
     }>;
+    'wp:featuredmedia'?: Array<{
+      source_url: string;
+    }>;
   };
 }
 
