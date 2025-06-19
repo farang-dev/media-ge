@@ -4,9 +4,9 @@ Allow: /
 Disallow: /api/
 
 # Sitemaps
-Sitemap: https://www.georgia-news-japan.online/sitemap-index.xml
-Sitemap: https://www.georgia-news-japan.online/sitemap.xml
-Sitemap: https://www.georgia-news-japan.online/sitemap-news.xml
+Sitemap: https://georgia-news-japan.online/sitemap-index.xml
+Sitemap: https://georgia-news-japan.online/sitemap.xml
+Sitemap: https://georgia-news-japan.online/sitemap-news.xml
 
 # Website information
 # ジョージアニュース - Georgian news in Japanese

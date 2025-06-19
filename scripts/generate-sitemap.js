@@ -5,7 +5,7 @@ const fs = require('fs');
 
 // WordPress.com API URL
 const WP_API_URL = process.env.WORDPRESS_API_URL;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.georgia-news-japan.online';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://georgia-news-japan.online';
 
 async function generateSitemap() {
   if (!WP_API_URL) {
@@ -47,7 +47,7 @@ async function generateSitemap() {
     // Output instructions for submitting to Google
     console.log('\nTo submit your sitemaps to Google:');
     console.log('1. Go to Google Search Console (https://search.google.com/search-console)');
-    console.log('2. Add your site if you haven\'t already (https://www.georgia-news-japan.online)');
+    console.log('2. Add your site if you haven\'t already (https://georgia-news-japan.online)');
     console.log('3. Go to Sitemaps section and submit your sitemap index URL');
     console.log(`   (e.g., ${SITE_URL}/sitemap-index.xml)`);
   } catch (error) {
